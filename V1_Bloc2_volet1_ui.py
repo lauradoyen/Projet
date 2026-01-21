@@ -1,68 +1,87 @@
 from nicegui import ui
 import pandas as pd
+import unicodedata #permet de faire une recherche sans se préoccuper des accents
+
 
 def display(model):
-    # Extraction des informations
-    def name_metabolite(model):
-        return [m.name for m in model.metabolites]
+    # ---------- Utils ----------
+    def normalize(text: str) -> str:   #fonction clé pour la recherche
+        if not isinstance(text, str):
+            return '' #sécurité
+        return ''.join(
+            c for c in unicodedata.normalize('NFD', text) #décompose les caractères accentués , ex : é → e + ´
+            if unicodedata.category(c) != 'Mn' #supprime les accents
+        ).lower()
+     
+    # résultat : "Acétyl-CoA" → "acetyl-coa"
 
-    def formula(model):
-        return [m.formula for m in model.metabolites]
+    def get_mass(m):  #sinon erreur 'str' object has no attribute 'get'
+        if isinstance(m.notes, dict):
+            return m.notes.get('mass')
+        return None
 
-    def charge(model):
-        return [m.charge for m in model.metabolites]
-
-    def masse(model):
-        return [m.notes.get('mass') for m in model.metabolites]
-
-    # Création du DataFrame
+    # ---------- DataFrame ----------
     df = pd.DataFrame({
-        'Metabolite name': name_metabolite(model),
-        'Formula': formula(model),
-        'Charge': charge(model),
-        'Masses': masse(model),
+        'Metabolite name': [m.name for m in model.metabolites],
+        'Formula': [m.formula for m in model.metabolites],
+        'Charge': [m.charge for m in model.metabolites],
+        'Masses': [get_mass(m) for m in model.metabolites],
     })
 
-    # Interface NiceGUI
-    ui.label("Identification and chemical structure of metabolites").classes("text-2xl font-bold")
+    # colonne normalisée pour la recherche
+    df['name_norm'] = df['Metabolite name'].apply(normalize) #colonne invisible pour la recherche partielle
 
-    query_input = ui.input("Enter the name of the metabolite :").classes("w-80")
+    # mapping affichage ↔ recherche
+    name_map = dict(zip(df['Metabolite name'], df['name_norm']))
 
-    result_container = ui.column().classes("mt-4")
+    # Création d'un dictionnaire       {
+    #               "Acétyl-CoA": "acetyl-coa",
+    #               "Glucose": "glucose"
+    #                }
 
-    def update_results():
-        result_container.clear()
+    # ---------- UI ----------
+    ui.label("Recherche de métabolites").classes('text-h5') 
 
-        query = query_input.value
+    results = ui.column().classes('q-gutter-md') #conteneur de résultats
 
+
+    # ---------- Affichage des métabolites sélectionnés ----------
+    def show_metabolites(selected_names: list[str]):
+        results.clear()
+
+        if not selected_names:
+            return
+
+        for name in selected_names:
+            row = df[df['Metabolite name'] == name].iloc[0]
+
+            with ui.card().classes('w-96'):
+                ui.label(f"🧬 {row['Metabolite name']}").classes('text-h6')
+                ui.separator()
+                ui.label(f"Formula : {row['Formula']}")
+                ui.label(f"Charge : {row['Charge']}")
+                ui.label(f"Masses : {row['Masses']}")
+
+    # ---------- Select avec autocomplétion avancée ----------
+    select = ui.select(
+        options=list(name_map.keys()),
+        label='Rechercher un ou plusieurs métabolites',
+        multiple=True,
+        on_change=lambda e: show_metabolites(e.value)
+    ).props(
+        'use-input clearable input-debounce=300' #Attente de 300 ms avant déclenchement : meilleure performance
+    ).classes('w-96')
+
+    # ---------- Recherche partielle insensible aux accents ----------
+    def filter_options(e):
+        query = normalize(e.value)
         if not query:
+            select.options = list(name_map.keys())
             return
 
-        bool_df = df["Metabolite name"].str.contains(query, case=False)
-        filtered_df = df[bool_df]
+        select.options = [
+            name for name, norm in name_map.items()
+            if query in norm
+        ]
 
-        if filtered_df.empty:
-            result_container.label("No result found").classes("text-red-600")
-            return
-
-        # Liste des suggestions
-        suggestions = filtered_df["Metabolite name"].tolist()
-
-        with result_container:
-            ui.label("Suggestions :").classes("text-lg font-semibold")
-            select = ui.select(options=suggestions, value=suggestions[0]).classes("w-80")
-
-            selected_container = ui.column().classes("mt-4")
-
-            def update_selected():
-                selected_name = select.value
-                selected_df = filtered_df[filtered_df["Metabolite name"] == selected_name]
-
-                selected_container.clear()
-                #selected_container.label("Selected metabolite :").classes("text-lg font-semibold")
-                ui.table.from_pandas(selected_df).classes("w-full")
-
-            select.on("update:model-value", lambda e: update_selected())
-            update_selected()
-
-    query_input.on("update:model-value", lambda e: update_results())
+    select.on('update:model-value', filter_options)
