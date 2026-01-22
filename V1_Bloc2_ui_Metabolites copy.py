@@ -19,6 +19,21 @@ def display(model):
         if isinstance(m.notes, dict):
             return m.notes.get('mass')
         return None
+    
+    def get_inchi(m):
+        if isinstance(m.annotation, dict):
+            return m.annotation.get('inchi')
+        return None
+
+    def get_inchikey(m):
+        if isinstance(m.annotation, dict):
+            return m.annotation.get('inchikey')
+        return None
+
+    def get_smiles(m):
+        if isinstance(m.notes, dict):
+            return m.notes.get('smiles')
+        return None
 
     # ---------- DataFrame ----------
     df = pd.DataFrame({
@@ -26,6 +41,10 @@ def display(model):
         'Formula': [m.formula for m in model.metabolites],
         'Charge': [m.charge for m in model.metabolites],
         'Masses': [get_mass(m) for m in model.metabolites],
+        'InChI': [get_inchi(m) for m in model.metabolites],
+        'InChIKey': [get_inchikey(m) for m in model.metabolites],
+        'SMILES': [get_smiles(m) for m in model.metabolites],
+
     })
 
     # colonne normalisée pour la recherche
@@ -55,12 +74,25 @@ def display(model):
         for name in selected_names:
             row = df[df['Metabolite name'] == name].iloc[0]
 
-            with ui.card().classes('w-96'):
-                ui.label(f"🧬 {row['Metabolite name']}").classes('text-h6')
-                ui.separator()
-                ui.label(f"Formula : {row['Formula']}")
-                ui.label(f"Charge : {row['Charge']}")
-                ui.label(f"Masses : {row['Masses']}")
+            with ui.row().classes('q-gutter-lg'): 
+                 # ← alignement horizontal
+
+                # -------- CARD GAUCHE : Infos générales --------
+                with ui.card().classes('w-96'):
+                    ui.label(f"🧬 {row['Metabolite name']}").classes('text-h6')
+                    ui.separator()
+                    ui.label(f"Formula : {row['Formula']}")
+                    ui.label(f"Charge : {row['Charge']}")
+                    ui.label(f"Mass : {row['Masses']}")
+
+                # -------- CARD DROITE : Représentation chimique --------
+                with ui.card().classes('w-96'):
+                    ui.label("⚗️ Standard chemical representation").classes('text-h6')
+                    ui.separator()
+
+                    ui.label(f"InChI : {row['InChI'] or 'Not available'}")
+                    ui.label(f"InChIKey : {row['InChIKey'] or 'Not available'}")
+                    ui.label(f"SMILES : {row['SMILES'] or 'Not available'}")
 
     # ---------- Select avec autocomplétion avancée ----------
     select = ui.select(
@@ -85,3 +117,4 @@ def display(model):
         ]
 
     select.on('update:model-value', filter_options)
+

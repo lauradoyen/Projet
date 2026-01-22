@@ -5,9 +5,7 @@ from model_utils import load_model
 import V1_Bloc1_ui
 import V1_Bloc2_ui_Genes
 import V1_Bloc2_ui_Metabolites
-import V1_Bloc2_volet2_ui
-import V1_Bloc4_ui 
-import V1_Bloc5_ui
+
 
 # Read SBML model
 model= load_model()
@@ -61,12 +59,12 @@ with ui.tab_panels(tabs, value=tab_accueil).classes('w-full'):
     # Onglet 4 : FBA simple
     with ui.tab_panel(tab_fba):
         ui.label("Informations générales").classes("text-xl")
-        V1_Bloc4_ui.display(model) 
+        
 
     # Onglet 5 : FVA
     with ui.tab_panel(tab_fva):
         ui.label("Informations générales").classes("text-xl")
-        V1_Bloc5_ui.display(model) 
+        
         
 # ---------------------------------------------------------
 # Lancer appli
