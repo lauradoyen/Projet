@@ -12,19 +12,10 @@ import V2_Bloc1_ui
 # Read SBML model
 model= load_model()
 
-# -----------------------------------------------------
 # Interface NiceGUI
-# -----------------------------------------------------
-
 with ui.column().classes("m-4"):
-    ui.label("Mon interface Projet BIOSTIC").classes("text-3xl font-bold")
-
-    ui.label("Nom du modèle").classes("text-xl mt-4")
-    ui.label(model.name).classes("text-lg")
-
-# -----------------------------------------------------
-# Onglets
-# -----------------------------------------------------
+    ui.label("Projet BIOSTIC").classes("text-3xl font-bold")
+    ui.label(f"Modele {model.name}").classes("text-xl mt-4")
 
 with ui.tabs().classes('w-full') as tabs:
     tab_accueil = ui.tab("Accueil")
