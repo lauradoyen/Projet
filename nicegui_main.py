@@ -7,6 +7,7 @@ import V1_Bloc1_ui
 import V1_Bloc2_ui_Genes
 import V1_Bloc2_ui_Metabolites
 import V2_Bloc1_ui
+import V2_Bloc2_ui
 
 
 # Read SBML model
@@ -21,7 +22,7 @@ with ui.tabs().classes('w-full') as tabs:
     tab_accueil = ui.tab("Accueil")
     tab_identification = ui.tab("Identification des métabolites")
     tab_representation = ui.tab("Représentation chimique des métabolites")
-    tab_fba = ui.tab("Simulation FBA")
+    tab_fba = ui.tab("Optimisation")
     tab_fva = ui.tab("FVA")
 
 with ui.tab_panels(tabs, value=tab_accueil).classes('w-full'):
@@ -48,9 +49,9 @@ with ui.tab_panels(tabs, value=tab_accueil).classes('w-full'):
         ui.label("Informations générales").classes("text-xl")
        
 
-    # Onglet 4 : FBA
+    # Onglet 4 : Optimisation 
     with ui.tab_panel(tab_fba):
-        V2_Bloc1_ui.display(model)
+        V2_Bloc2_ui.display(model)
 
     # Onglet 5 : FVA
     with ui.tab_panel(tab_fva):
