@@ -21,31 +21,13 @@ def display(model):
     metabolites = model.metabolites
     liste_meta, liste_comp = split_metabolite_info(metabolites)
 
-    # Informations générales
-    with ui.column().classes("text-lg"):
-        ui.label(f"Name of the model: {model.name}")
-        ui.label(f"Number of metabolites: {len(model.metabolites)}")
-        ui.label(f"Number of reactions: {len(model.reactions)}")
-        ui.label(f"Number of genes: {len(model.genes)}")
-
     # Compartiments
     Name = list(model.compartments.values())
     Id = list(model.compartments.keys())
 
-    with ui.column().classes("mt-4 text-lg"):
-        ui.label(f"Number of compartments: {len(Name)}")
-        ui.label("Compartments:")
-        for i in range(len(Name)):
-            ui.label(Name[i]) 
-        
     # Nombre de métabolites par compartiment
     Number_of_metabolites = [len([met for met in model.metabolites 
             if met.compartment == comp_id]) for comp_id in Id]
-
-    with ui.column().classes("mt-4 text-lg"):
-        for i in range(len(Name)):
-            ui.label(f"Number of {Name[i]} metabolites : {Number_of_metabolites[i]}")
-
 
     # Nombre de dead-ends (impliqués dans une seule réaction)
     def find_dead_end_metabolites(model): 
@@ -57,5 +39,20 @@ def display(model):
     
     Dead_ends = find_dead_end_metabolites(model) 
 
-    with ui.column().classes("mt-4 text-lg"):
-        ui.label(f"Number of dead-ends: {len(Dead_ends)}")
+
+    with ui.row().classes("gap-6"): #Visualisation
+
+        # Informations générales
+        with ui.column().classes("bg-gray-100 p-4 rounded-lg shadow-md w-80"):
+            ui.label(f"Name of the model: {model.name}")
+            ui.label(f"Number of metabolites: {len(model.metabolites)}")
+            ui.label(f"Number of reactions: {len(model.reactions)}")
+            ui.label(f"Number of genes: {len(model.genes)}")
+
+        with ui.column().classes("bg-gray-100 p-4 rounded-lg shadow-md w-80"):
+            ui.label(f"Number of compartments: {len(Name)}")
+            ui.label("List of compartments:").classes("font-semibold")
+            for i in range(len(Name)):
+                ui.label(f" * Number of {Name[i]} metabolites: {Number_of_metabolites[i]}") 
+            ui.label(f"Number of dead-ends: {len(Dead_ends)}")
+        
