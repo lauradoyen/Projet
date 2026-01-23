@@ -2,6 +2,7 @@ from nicegui import ui
 from collections import Counter
 import pandas as pd 
 
+
 def display(model):
 
     ui.label("ID card of the model").classes("text-2xl font-bold mb-4")
