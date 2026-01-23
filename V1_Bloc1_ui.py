@@ -40,7 +40,7 @@ def display(model):
     Dead_ends = find_dead_end_metabolites(model) 
 
 
-    with ui.row().classes("gap-6"): #Visualisation
+    with ui.row().classes("gap-6"): #Visualisation en colonnes
 
         # Informations générales
         with ui.column().classes("bg-gray-100 p-4 rounded-lg shadow-md w-80"):

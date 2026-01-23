@@ -1,10 +1,12 @@
 from nicegui import ui
 import cobra
 from model_utils import load_model
+#print("VERSION NICEGUI =", nicegui._version_) 
 
 import V1_Bloc1_ui
 import V1_Bloc2_ui_Genes
 import V1_Bloc2_ui_Metabolites
+import V2_Bloc1_ui
 
 
 # Read SBML model
@@ -29,7 +31,7 @@ with ui.tabs().classes('w-full') as tabs:
     tab_accueil = ui.tab("Accueil")
     tab_identification = ui.tab("Identification des métabolites")
     tab_representation = ui.tab("Représentation chimique des métabolites")
-    tab_fba = ui.tab("Simulation FBA simple")
+    tab_fba = ui.tab("Simulation FBA")
     tab_fva = ui.tab("FVA")
 
 with ui.tab_panels(tabs, value=tab_accueil).classes('w-full'):
@@ -56,10 +58,9 @@ with ui.tab_panels(tabs, value=tab_accueil).classes('w-full'):
         ui.label("Informations générales").classes("text-xl")
        
 
-    # Onglet 4 : FBA simple
+    # Onglet 4 : FBA
     with ui.tab_panel(tab_fba):
-        ui.label("Informations générales").classes("text-xl")
-        
+        V2_Bloc1_ui.display(model)
 
     # Onglet 5 : FVA
     with ui.tab_panel(tab_fva):
