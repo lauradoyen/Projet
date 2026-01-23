@@ -44,7 +44,6 @@ def display(model):
 
         # Informations générales
         with ui.column().classes("bg-gray-100 p-4 rounded-lg shadow-md w-80"):
-            ui.label(f"Name of the model: {model.name}")
             ui.label(f"Number of metabolites: {len(model.metabolites)}")
             ui.label(f"Number of reactions: {len(model.reactions)}")
             ui.label(f"Number of genes: {len(model.genes)}")

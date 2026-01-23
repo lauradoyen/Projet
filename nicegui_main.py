@@ -17,8 +17,7 @@ model= load_model()
 # -----------------------------------------------------
 
 with ui.column().classes("m-4"):
-    ui.label("Mon interface NiceGUI").classes("text-3xl font-bold")
-    ui.label("Bienvenue dans votre première application NiceGUI !").classes("text-lg mt-2")
+    ui.label("Mon interface Projet BIOSTIC").classes("text-3xl font-bold")
 
     ui.label("Nom du modèle").classes("text-xl mt-4")
     ui.label(model.name).classes("text-lg")
