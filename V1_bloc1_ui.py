@@ -1,5 +1,6 @@
 from nicegui import ui
 from collections import Counter
+import pandas as pd 
 
 def display(model):
 
@@ -21,32 +22,39 @@ def display(model):
 
     # Informations générales
     with ui.column().classes("text-lg"):
-        ui.label(f"The name of the model is: {model.name}")
-        ui.label(f"The number of metabolites is: {len(model.metabolites)}")
-        ui.label(f"The number of reactions is: {len(model.reactions)}")
-        ui.label(f"The number of genes is: {len(model.genes)}")
+        ui.label(f"Name of the model: {model.name}")
+        ui.label(f"Number of metabolites: {len(model.metabolites)}")
+        ui.label(f"Number of reactions: {len(model.reactions)}")
+        ui.label(f"Number of genes: {len(model.genes)}")
 
     # Compartiments
     Name = list(model.compartments.values())
     Id = list(model.compartments.keys())
 
     with ui.column().classes("mt-4 text-lg"):
-        ui.label(f"The two compartments are: {Name[0]} and {Name[1]}")
-        ui.label(f"The ID of the compartments are: {Id[0]} and {Id[1]}")
-        ui.label(f"The number of compartments is: {len(Name)}")
-
+        ui.label(f"Number of compartments: {len(Name)}")
+        ui.label("Compartments:")
+        for i in range(len(Name)):
+            ui.label(Name[i]) 
+        
     # Nombre de métabolites par compartiment
-    Number_of_metabolite = [
-        len([met for met in model.metabolites if met.compartment == comp_id])
-        for comp_id in Id
-    ]
+    Number_of_metabolites = [len([met for met in model.metabolites 
+            if met.compartment == comp_id]) for comp_id in Id]
 
     with ui.column().classes("mt-4 text-lg"):
-        ui.label(f"The number of cytosolic metabolites is: {Number_of_metabolite[0]}")
-        ui.label(f"The number of extracellular metabolites is: {Number_of_metabolite[1]}")
+        for i in range(len(Name)):
+            ui.label(f"Number of {Name[i]} metabolites : {Number_of_metabolites[i]}")
 
-    # Métabolites présents dans les deux compartiments
-    Meta_compte = Counter(liste_meta)
-    meta_dubls = [meta for meta, count in Meta_compte.items() if count == 2]
 
-    ui.label(f"The number of cytosolic and extracellular metabolites is: {len(meta_dubls)}").classes("mt-4 text-lg")
+    # Nombre de dead-ends (impliqués dans une seule réaction)
+    def find_dead_end_metabolites(model): 
+        dead_ends = [] 
+        for m in model.metabolites: 
+            if len(m.reactions) == 1: 
+                dead_ends.append(m.id) 
+        return dead_ends
+    
+    Dead_ends = find_dead_end_metabolites(model) 
+
+    with ui.column().classes("mt-4 text-lg"):
+        ui.label(f"Number of dead-ends: {len(Dead_ends)}")
