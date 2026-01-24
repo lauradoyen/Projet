@@ -6,6 +6,7 @@ from model_utils import load_model
 import V1_Bloc1_ui
 import V1_Bloc2_ui_Genes
 import V1_Bloc2_ui_Metabolites
+import V1_Bloc2_ui_Reactions
 import V2_Bloc1_ui
 import V2_Bloc2_ui
 
@@ -19,44 +20,53 @@ with ui.column().classes("m-4"):
     ui.label(f"Modele {model.name}").classes("text-xl mt-4")
 
 with ui.tabs().classes('w-full') as tabs:
-    tab_accueil = ui.tab("Accueil")
-    tab_identification = ui.tab("Identification des métabolites")
-    tab_representation = ui.tab("Représentation chimique des métabolites")
-    tab_fba = ui.tab("Optimisation")
-    tab_fva = ui.tab("FVA")
+    tab_voletO = ui.tab("Reconstruction ID card")
+    tab_volet1 = ui.tab("Navigation")
+    tab_volet2 = ui.tab("Model")
+    Tab_volet3=ui.tab("Analyses")
 
-with ui.tab_panels(tabs, value=tab_accueil).classes('w-full'):
+with ui.tab_panels(tabs, value=tab_voletO).classes('w-full'):
 
-    # Onglet 1 : Accueil
-    with ui.tab_panel(tab_accueil):
+    # Volet 1 Bloc1
+    with ui.tab_panel(tab_voletO):
         V1_Bloc1_ui.display(model)
 
-    # Onglet 2 : Identification des métabolites/gènes
-    with ui.tab_panel(tab_identification):
+    # Volet 1  Bloc 2, 3, 4: Identification des métabolites/réactions/gènes
+    with ui.tab_panel(tab_volet1):
         with ui.tabs().classes('w-full') as internal_tabs:
-              tab_metabolites = ui.tab('Métabolites')
-              tab_genes = ui.tab('Gènes')
+              tab_metabolites = ui.tab('Metabolites')
+              tab_reactions = ui.tab('Reactions')
+              tab_genes = ui.tab('Genes')
 
         with ui.tab_panels(internal_tabs, value=tab_metabolites).classes('w-full'):
             with ui.tab_panel(tab_metabolites):
                 V1_Bloc2_ui_Metabolites.display(model)
 
+            with ui.tab_panel(tab_reactions):
+                V1_Bloc2_ui_Reactions.display(model)
+
             with ui.tab_panel(tab_genes):
                 V1_Bloc2_ui_Genes.display(model)
-        
-    # Onglet 3 : Représentation chimique
-    with ui.tab_panel(tab_representation):
-        ui.label("Informations générales").classes("text-xl")
-       
+  
+    # Volet 2  : Model
+    with ui.tab_panel(tab_volet2):
+        with ui.tabs().classes('w-full') as internal_tabs:
+              tab_constraints = ui.tab('Constraints')
+              tab_fba = ui.tab('FBA')
 
-    # Onglet 4 : Optimisation 
-    with ui.tab_panel(tab_fba):
-        V2_Bloc2_ui.display(model)
+        with ui.tab_panels(internal_tabs, value=tab_constraints).classes('w-full'):
+            with ui.tab_panel(tab_constraints):
+                V2_Bloc1_ui.display(model)
 
-    # Onglet 5 : FVA
-    with ui.tab_panel(tab_fva):
-        ui.label("Informations générales").classes("text-xl")
-        
+            with ui.tab_panel(tab_fba):
+                V2_Bloc2_ui.display(model)
+    
+    #Volet 3
+    with ui.tab_panel(Tab_volet3):
+        ui.label("TO DO")
+
+                
+
         
 # ---------------------------------------------------------
 # Lancer appli
