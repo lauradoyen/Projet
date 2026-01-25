@@ -55,38 +55,7 @@ def display(model):
     with ui.column().classes("text-lg"):
         ui.label(f"Total Genes number in the model: {total_genes}\n\n")
         ui.label(f"Artificial genes number: {artificiel_genes_count}\n\n")
-        ui.label(f"Spontaneous reactions: {genes_count['s']}\n")
-        ui.label(f"Transport reactions: {genes_count['t']}\n")
-        ui.label(f"Demand reactions: {genes_count['d']}\n")
-        ui.label(f"Sink reactions: {genes_count['sk']}\n")
-        ui.label(f"Uptake reactions: {genes_count['u']}\n")
-        ui.label(f"Production reactions : {genes_count['p']}\n")
-
     
-
-    # Extraction of reactions and associated identifiers
-    NCBI_genes = [rxn.annotation['ncbigene'] for rxn in model.genes if 'ncbigene' in rxn.annotation]
-    KEGG_genes = [rxn.annotation['kegg.genes'] for rxn in model.genes if 'kegg.genes' in rxn.annotation]
-
-    NCBI_protein = [rxn.annotation['ncbiprotein'] for rxn in model.genes if 'ncbiprotein' in rxn.annotation]
-    UNIPROT = [rxn.annotation['uniprot'] for rxn in model.genes if 'uniprot' in rxn.annotation]
-
-    # List of databases
-    Database = ["NCBI_genes", 'KEGG_genes','NCBI_protein','UNIPROT']
-
-    # Calculation of the number of annotations for each database
-    Number_of_annotations = [len(db) for db in Database]
-
-    # Display of results
-    with ui.column().classes("text-lg"):
-        ui.label(f"Genes :")
-        ui.label(f"    {Number_of_annotations[0]} genes have a NCBI annotation of the form : {NCBI_genes[0]}")
-        ui.label(f"    {Number_of_annotations[1]} genes have a KEGG annotation of the form : {KEGG_genes[0]}")
-
-    with ui.column().classes("text-lg"):
-        ui.label(f"\nGenes Products :")
-        ui.label(f"    {Number_of_annotations[2]} gene products have a NCBI annotation of the form : {NCBI_protein[0]}")
-        ui.label(f"    {Number_of_annotations[3]} gene products have a UNIPROT annotation of the form : {UNIPROT[0]}")
 
     with ui.column().classes("text-lg"):
         for sbo, reactions in sbo_terms.items():
@@ -154,26 +123,43 @@ def display(model):
             row = df[df['Gene ID'] == name].iloc[0]
 
             with ui.card().classes('w_96'):
-                ui.label(f" {row['Gene ID']}").classes('text-h6')
-                ui.separator()
-                ui.label(f"DeepLoc : {row['DeepLoc']}") 
-                ui.label(f"TMHMM : {row['TMHMM']}") 
-                ui.label(f"SignalP : {row['SignalP']}") 
-                ui.separator()
-                ui.label(f"Number of associated reactions : {row['Count Reactions']}")
-                ui.label("List of associated reactions:")
-                with ui.row():
-                    with ui.scroll_area().classes('w-32 h-32 border'):
-                        for reaction in row['Reactions']:
-                            ui.label(reaction)
-                ui.separator()
-                ui.label(f"SBO : {row['SBO']}")
-                ui.label(f"ncbigene : {row['ncbigene']}")
-                ui.label(f"ncbiprotein : {row['ncbiprotein']}")
-                ui.label(f"kegg.genes : {row['kegg.genes']}")
-                ui.label(f"uniprot : {row['uniprot']}")
-                ui.label(f"refseq : {row['refseq']}")
+                with ui.row().classes('q-gutter-lg'): 
+                    # ← alignement horizontal
 
+                    # CARD1 : Infos générales
+                    with ui.card().classes('w-96'):
+                        ui.label(f"{row['Gene ID']}").classes('text-h6')
+                        ui.separator()
+                        ui.label(f"Annotation :").classes('font-semibold')
+                        ui.label(f"ncbigene : {row['ncbigene']}")
+                        ui.label(f"kegg.genes : {row['kegg.genes']}")
+                        ui.separator()
+                        ui.label(f"SBO : {row['SBO']}")
+                        ui.label(f"refseq : {row['refseq']}")
+                    
+                    #CARD2 : Produit génique
+                    with ui.card().classes('w-96'):
+                        ui.label("Gene product").classes('text-h6')
+                        ui.separator()
+                        ui.label(f"ncbiprotein : {row['ncbiprotein']}")
+                        ui.label(f"uniprot : {row['uniprot']}")
+                        ui.separator()
+                        ui.label(f"DeepLoc : {row['DeepLoc']}") 
+                        ui.label(f"TMHMM : {row['TMHMM']}") 
+                        ui.label(f"SignalP : {row['SignalP']}") 
+
+                    #CARD 3 : Contexte dans le réseau métabolique
+                    with ui.card().classes('w-96'):
+                        ui.label(" Context in the metabolic network").classes('text-h6')
+                        ui.separator()
+                        ui.label(f"Number of associated reactions : {row['Count Reactions']}")
+                        ui.label("List of associated reactions:")
+                        with ui.row():
+                            with ui.scroll_area().classes('w-64 h-50 border'):
+                                for reaction in row['Reactions']:
+                                    ui.label(reaction)
+                    
+                
 
 
     # ---------- Select avec autocomplétion avancée ----------

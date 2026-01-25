@@ -34,9 +34,21 @@ def display(model):
         if isinstance(m.notes, dict):
             return m.notes.get('smiles')
         return None
+    
+    def get_data_met(m):
+        if isinstance(m.annotation, dict):
+            return m.annotation.get('database')
+        return None
+    
+    def get_sbo_met(m):
+        if isinstance(m.annotation, dict):
+            return m.annotation.get('sbo')
+        return None
+
 
     # ---------- DataFrame ----------
     df = pd.DataFrame({
+        'Metabolite ID' : [m.id for m in model.metabolites],
         'Metabolite name': [m.name for m in model.metabolites],
         'Formula': [m.formula for m in model.metabolites],
         'Charge': [m.charge for m in model.metabolites],
@@ -44,6 +56,11 @@ def display(model):
         'InChI': [get_inchi(m) for m in model.metabolites],
         'InChIKey': [get_inchikey(m) for m in model.metabolites],
         'SMILES': [get_smiles(m) for m in model.metabolites],
+        'Database' : [get_data_met(m) for m in model.metabolites],
+        'SBO' : [get_sbo_met(m) for m in model.metabolites],
+        'Reactions': [[r.id for r in m.reactions] for m in model.metabolites],
+        'Count Reactions': [len(m.reactions) for m in model.metabolites],
+        'Compartment' : [m.compartment for m in model.metabolites]
 
     })
 
@@ -77,22 +94,45 @@ def display(model):
             with ui.row().classes('q-gutter-lg'): 
                  # ← alignement horizontal
 
-                # -------- CARD GAUCHE : Infos générales --------
+                # CARD1 : Infos générales
                 with ui.card().classes('w-96'):
-                    ui.label(f"🧬 {row['Metabolite name']}").classes('text-h6')
+                    ui.label(f"{row['Metabolite name']}").classes('text-h6')
                     ui.separator()
+                    ui.label(f"Metabolite ID : {row['Metabolite ID']}")
                     ui.label(f"Formula : {row['Formula']}")
                     ui.label(f"Charge : {row['Charge']}")
                     ui.label(f"Mass : {row['Masses']}")
 
-                # -------- CARD DROITE : Représentation chimique --------
+                # CARD2 : Représentation chimique
                 with ui.card().classes('w-96'):
-                    ui.label("⚗️ Standard chemical representation").classes('text-h6')
+                    ui.label("Standard chemical representation").classes('text-h6')
                     ui.separator()
-
                     ui.label(f"InChI : {row['InChI'] or 'Not available'}")
                     ui.label(f"InChIKey : {row['InChIKey'] or 'Not available'}")
                     ui.label(f"SMILES : {row['SMILES'] or 'Not available'}")
+                
+                #CARD3 : Références
+                with ui.card().classes('w-96'):
+                    ui.label(" References and interoperability").classes('text-h6')
+                    ui.separator()
+                    ui.label(f"Database : {row['Database'] or 'Not available'}")
+                    ui.label(f"SBO : {row['SBO'] or 'Not available'}")
+                
+                #CARD 4 : Contexte dans le réseau métabolique
+                with ui.card().classes('w-96'):
+                    ui.label(" Context in the metabolic network").classes('text-h6')
+                    ui.separator()
+                    ui.label(f"Number of associated reactions : {row['Count Reactions']}")
+                    ui.label("List of associated reactions:")
+                    with ui.row():
+                        with ui.scroll_area().classes('w-64 h-50 border'):
+                            for reaction in row['Reactions']:
+                                ui.label(reaction)
+                    ui.separator()
+                    ui.label(f"Compartment : {row['Compartment']}")
+
+
+                
 
     # ---------- Select avec autocomplétion avancée ----------
     select = ui.select(

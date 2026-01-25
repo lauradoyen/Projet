@@ -4,7 +4,49 @@ import unicodedata #permet de faire une recherche sans se préoccuper des accent
 import re
 
 def display(model):
-    ui.label("Search Reactions").classes("text-2xl font-bold mb-4")
+
+
+    #INFO REACTIONS
+    ui.label("General information about the reactions").classes("text-2xl font-bold mb-4")
+
+    def gene_type_count(model):
+    # Initialize gene types
+        genes_types = ["Pc", "s", "t", "d", "sk", "u", "p"]
+
+    # Create a dictionary to store the count of genes of each type
+        genes_count = {gene_type: 0 for gene_type in genes_types}
+        # création de : {'Pc': 0, 's': 0, 't': 0, 'd': 0, 'sk': 0, 'u': 0, 'p': 0}
+        artificial_genes_count = 0
+
+        for gene in model.genes:
+        # Remove the 'gp_' prefix from the gene id
+            gene_id = gene.id.replace('gp_', '')
+
+        # Increment the count if the gene name contains the gene type
+            for gene_type in genes_types:
+                if gene_type in gene_id:
+                    genes_count[gene_type] += 1
+
+        # Count the number of times the characters ‘s’, ‘t’, ‘d’, ‘u’, or ‘p’ appear in the gene name
+            artificial_genes_count += sum(gene_id.count(char) for char in ['s', 't', 'd', 'u', 'p'])
+
+        return genes_count, artificial_genes_count
+    
+    genes_count, artificiel_genes_count = gene_type_count(model)
+    total_genes = len(model.genes)
+
+
+
+    # Informations générales
+    with ui.column().classes("text-lg"):
+        ui.label(f"Spontaneous reactions: {genes_count['s']}\n")
+        ui.label(f"Transport reactions: {genes_count['t']}\n")
+        ui.label(f"Demand reactions: {genes_count['d']}\n")
+        ui.label(f"Sink reactions: {genes_count['sk']}\n")
+        ui.label(f"Uptake reactions: {genes_count['u']}\n")
+        ui.label(f"Production reactions : {genes_count['p']}\n")
+
+ 
 
     def normalize(text: str) -> str:   #fonction clé pour la recherche
         if not isinstance(text, str):
@@ -56,6 +98,18 @@ def display(model):
 
     rReactionID, rReactionName, rReactionFormula, rLowerBound, rUpperBound, rECNumbers, rGPRAssociations, rSources = reactionInfos(model)
 
+    def get_data_reaction(rxn):
+        if isinstance(rxn.annotation, dict):
+            return rxn.annotation.get('database')
+        return None
+    
+    def get_sbo_reaction(rxn):
+        if isinstance(rxn.annotation, dict):
+            return rxn.annotation.get('sbo')
+        return None
+
+
+
     # Création du DataFrame
     df = pd.DataFrame({
         'Reaction ID': rReactionID,
@@ -64,8 +118,11 @@ def display(model):
         'Lower bound' : rLowerBound,
         'Upper bound' : rUpperBound,
         'Enzyme Commission Number' : rECNumbers,
-        ' Gene–Protein–Reaction association' : rGPRAssociations,
-        'Source of reconstruction' : rSources
+        'Gene–Protein–Reaction association' : rGPRAssociations,
+        'Source of reconstruction' : rSources,
+        'Database' : [get_data_reaction(rxn) for rxn in model.reactions],
+        'SBO' : [get_sbo_reaction(rxn) for rxn in model.reactions]
+        
 
     })
 
@@ -78,13 +135,14 @@ def display(model):
 
 
     # ---------- UI ----------
-    ui.label("Recherche de réactions").classes('text-h5') 
+    ui.label("   ")
+    ui.label("Search Reactions").classes("text-2xl font-bold mb-4")
 
     results = ui.column().classes('q-gutter-md') #conteneur de résultats
 
 
 
-        # ---------- Affichage des gènes sélectionnés ----------
+        # ---------- Affichage des réactions sélectionnées ----------
     def show_reactions(selected_names: list[str]):
         results.clear()
 
@@ -94,16 +152,34 @@ def display(model):
         for name in selected_names:
             row = df[df['Reaction ID'] == name].iloc[0]
 
-            with ui.card().classes('w-96'):
-                ui.label(row['Reaction ID']).classes('text-h6')
-                ui.separator()
-                ui.label(f"Name of the reaction: {row['Name of the reaction']}")
-                ui.label(f"Formula: {row['Formula']}")
-                ui.label(f"Lower bound: {row['Lower bound']}")
-                ui.label(f"Upper bound: {row['Upper bound']}")
-                ui.label(f"Enzyme Commission Number: {row['Enzyme Commission Number']}")
-                ui.label(f"Gene–Protein–Reaction association: {row[' Gene–Protein–Reaction association']}")
-                ui.label(f"Source of reconstruction: {row['Source of reconstruction']}")
+            with ui.row().classes('q-gutter-lg'): 
+                 # ← alignement horizontal
+
+                # CARD1 : Identification et définition
+                with ui.card().classes('w-96'):
+                    ui.label(row['Reaction ID']).classes('text-h6')
+                    ui.separator()
+                    ui.label(f"Name of the reaction: {row['Name of the reaction']}")
+                    ui.label(f"Formula: {row['Formula']}")
+                
+                # CARD2 : Propriétés associées
+                with ui.card().classes('w-96'):
+                    ui.label("Properties").classes('text-h6')
+                    ui.separator()
+                    ui.label(f"Gene–Protein–Reaction association: {row['Gene–Protein–Reaction association']}")
+                    ui.label(f"Lower bound: {row['Lower bound']}")
+                    ui.label(f"Upper bound: {row['Upper bound']}")
+                
+                # CARD3 : Références et interopérabilités
+                with ui.card().classes('w-96'):
+                    ui.label("References and interoperability").classes('text-h6')
+                    ui.separator()
+                    ui.label(f"Database: {row['Database'] or 'Not available'}")
+                    ui.label(f"Enzyme Commission Number: {row['Enzyme Commission Number']}")
+                    ui.label(f"SBO: {row['SBO'] or 'Not available'}")
+                    ui.label(f"Source of reconstruction: {row['Source of reconstruction']}")
+                
+                
 
 
 
