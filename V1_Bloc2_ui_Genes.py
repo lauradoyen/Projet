@@ -122,43 +122,42 @@ def display(model):
         for name in selected_names:
             row = df[df['Gene ID'] == name].iloc[0]
 
-            with ui.card().classes('w_96'):
-                with ui.row().classes('q-gutter-lg'): 
-                    # ← alignement horizontal
+            with ui.row().classes('q-gutter-lg'): 
+                # ← alignement horizontal
 
-                    # CARD1 : Infos générales
-                    with ui.card().classes('w-96'):
-                        ui.label(f"{row['Gene ID']}").classes('text-h6')
-                        ui.separator()
-                        ui.label(f"Annotation :").classes('font-semibold')
-                        ui.label(f"ncbigene : {row['ncbigene']}")
-                        ui.label(f"kegg.genes : {row['kegg.genes']}")
-                        ui.separator()
-                        ui.label(f"SBO : {row['SBO']}")
-                        ui.label(f"refseq : {row['refseq']}")
-                    
-                    #CARD2 : Produit génique
-                    with ui.card().classes('w-96'):
-                        ui.label("Gene product").classes('text-h6')
-                        ui.separator()
-                        ui.label(f"ncbiprotein : {row['ncbiprotein']}")
-                        ui.label(f"uniprot : {row['uniprot']}")
-                        ui.separator()
-                        ui.label(f"DeepLoc : {row['DeepLoc']}") 
-                        ui.label(f"TMHMM : {row['TMHMM']}") 
-                        ui.label(f"SignalP : {row['SignalP']}") 
+                # CARD1 : Infos générales
+                with ui.card().classes('w-96'):
+                    ui.label(f"{row['Gene ID']}").classes('text-h6')
+                    ui.separator()
+                    ui.label(f"Annotation :").classes('font-semibold')
+                    ui.label(f"ncbigene : {row['ncbigene']}")
+                    ui.label(f"kegg.genes : {row['kegg.genes']}")
+                    ui.separator()
+                    ui.label(f"SBO : {row['SBO']}")
+                    ui.label(f"refseq : {row['refseq']}")
+                
+                #CARD2 : Produit génique
+                with ui.card().classes('w-96'):
+                    ui.label("Gene product").classes('text-h6')
+                    ui.separator()
+                    ui.label(f"ncbiprotein : {row['ncbiprotein']}")
+                    ui.label(f"uniprot : {row['uniprot']}")
+                    ui.separator()
+                    ui.label(f"DeepLoc : {row['DeepLoc']}") 
+                    ui.label(f"TMHMM : {row['TMHMM']}") 
+                    ui.label(f"SignalP : {row['SignalP']}") 
 
-                    #CARD 3 : Contexte dans le réseau métabolique
-                    with ui.card().classes('w-96'):
-                        ui.label(" Context in the metabolic network").classes('text-h6')
-                        ui.separator()
-                        ui.label(f"Number of associated reactions : {row['Count Reactions']}")
-                        ui.label("List of associated reactions:")
-                        with ui.row():
-                            with ui.scroll_area().classes('w-64 h-50 border'):
-                                for reaction in row['Reactions']:
-                                    ui.label(reaction)
-                    
+                #CARD 3 : Contexte dans le réseau métabolique
+                with ui.card().classes('w-96'):
+                    ui.label(" Context in the metabolic network").classes('text-h6')
+                    ui.separator()
+                    ui.label(f"Number of associated reactions : {row['Count Reactions']}")
+                    ui.label("List of associated reactions:")
+                    with ui.row():
+                        with ui.scroll_area().classes('w-64 h-50 border'):
+                            for reaction in row['Reactions']:
+                                ui.label(reaction)
+                
                 
 
 
