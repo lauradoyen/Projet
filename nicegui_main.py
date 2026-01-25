@@ -7,9 +7,10 @@ import V1_Bloc1_ui
 import V1_Bloc2_ui_Genes
 import V1_Bloc2_ui_Metabolites
 import V1_Bloc2_ui_Reactions
+import V1_Bloc4_ui
 import V2_Bloc1_ui
 import V2_Bloc2_ui
-import V2_Bloc4_ui
+
 
 
 # Read SBML model
