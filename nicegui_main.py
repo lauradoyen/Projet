@@ -9,6 +9,7 @@ import V1_Bloc2_ui_Metabolites
 import V1_Bloc2_ui_Reactions
 import V2_Bloc1_ui
 import V2_Bloc2_ui
+import V2_Bloc4_ui
 
 
 # Read SBML model
@@ -37,6 +38,7 @@ with ui.tab_panels(tabs, value=tab_voletO).classes('w-full'):
               tab_metabolites = ui.tab('Metabolites')
               tab_reactions = ui.tab('Reactions')
               tab_genes = ui.tab('Genes')
+              tab_exch_reaction = ui.tab('Exchange Reactions')
 
         with ui.tab_panels(internal_tabs, value=tab_metabolites).classes('w-full'):
             with ui.tab_panel(tab_metabolites):
@@ -47,6 +49,9 @@ with ui.tab_panels(tabs, value=tab_voletO).classes('w-full'):
 
             with ui.tab_panel(tab_genes):
                 V1_Bloc2_ui_Genes.display(model)
+
+            with ui.tab_panel(tab_exch_reaction):
+                V1_Bloc4_ui.display(model)
   
     # Volet 2  : Model
     with ui.tab_panel(tab_volet2):
