@@ -75,4 +75,4 @@ with ui.tab_panels(tabs, value=tab_voletO).classes('w-full'):
 
         
 # Lancer appli
-ui.run(port=8081)
+ui.run(port=8081, reload=False)
