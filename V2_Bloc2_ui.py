@@ -1,6 +1,7 @@
 from nicegui import ui
 import pandas as pd
 import csv
+import V2_Bloc1_ui  as Bloc1 #contraintes du modèle d'origine
 
 
 def display(model):
@@ -19,6 +20,26 @@ def display(model):
         return pd.DataFrame(rows)
 
     df = extract_all_constraints(model)
+
+    #Appliquer les contraintes du modèle originel 
+    def apply_constraints(df):
+        for _, row in df.iterrows():
+            r = model.reactions.get_by_id(row["Reaction"])
+
+            lb = row["Lower bound"]
+            ub = row["Upper bound"]
+
+            try:
+                r.lower_bound = float(lb)
+            except:
+                r.lower_bound = -1000
+
+            try:
+                r.upper_bound = float(ub)
+            except:
+                r.upper_bound = 1000
+
+
 
     # Mise à jour du modèle
     def on_grid_edit(e):
@@ -50,7 +71,7 @@ def display(model):
         ui.download(filename)
 
     # Interface 
-    ui.label("Constraints table (editable)").classes("text-xl font-bold mb-2")
+    ui.label("Constraints table").classes("text-xl font-bold mb-2")
 
     # Boutons de filtrage uptake
     def filter_uptake():
@@ -62,9 +83,24 @@ def display(model):
         grid.options["rowData"] = df.to_dict("records")
         grid.update()
 
+    def reset_constraints():
+        nonlocal df
+        df = extract_all_constraints(model) #tableau complet
+        for row in Bloc1.rows_constraints: #réactions originelles 
+            rxn = row["Reaction"]
+            df.loc[df["Reaction"] == rxn, "Lower bound"] = row["Lower bound"]
+            df.loc[df["Reaction"] == rxn, "Upper bound"] = row["Upper bound"]
+        apply_constraints(df) #appliquer au modèle 
+
+        grid.options["rowData"] = df.to_dict("records") #update 
+        grid.update()
+
+        ui.notify("Constraints restored from original model", color="green")
+
     with ui.row().classes("gap-4 mb-4"):
         ui.button("Show uptake reactions", on_click=filter_uptake).classes("bg-blue-600 text-white")
         ui.button("Show all reactions", on_click=reset_filter).classes("bg-gray-500 text-white")
+        ui.button("Reset constraints from original model", on_click=reset_constraints).classes("bg-red-600 text-white mb-4")
 
     grid = ui.aggrid(
         {
@@ -101,8 +137,12 @@ def display(model):
 
     # Résultat FBA
     result_fba = ui.column()
+    last_fluxes = None
+    last_objective_value = None
+
 
     def run_fba():
+        nonlocal last_fluxes, last_objective_value
         result_fba.clear()
 
         rxn = model.reactions.get_by_id(objective_select.value)
@@ -110,21 +150,53 @@ def display(model):
 
         solution = model.optimize()
 
-        fluxes = pd.DataFrame({
+        # Stockage
+        last_objective_value = solution.objective_value
+        last_fluxes = pd.DataFrame({
             "Reaction": [r.id for r in model.reactions if solution.fluxes[r.id] != 0],
             "Flux": [solution.fluxes[r.id] for r in model.reactions if solution.fluxes[r.id] != 0],
         })
 
+        # Affichage
         with result_fba:
-            ui.label(f"Objective value: {solution.objective_value:.4f}").classes("font-semibold mt-2")
-            ui.table(
-                columns=[
-                    {"name": "Reaction", "label": "Reaction", "field": "Reaction"},
-                    {"name": "Flux", "label": "Flux", "field": "Flux"},
-                ],
-                rows=fluxes.to_dict("records"),
-            ).classes("w-full")
+            with ui.scroll_area().classes('w-180 h-100 border'):
+                ui.label(f"Objective value: {last_objective_value:.4f}").classes("font-semibold mt-2")
+                ui.table(
+                    columns=[
+                        {"name": "Reaction", "label": "Reaction", "field": "Reaction"},
+                        {"name": "Flux", "label": "Flux", "field": "Flux"},
+                    ],
+                    rows=last_fluxes.to_dict("records"),
+                ).classes("w-full")
+
+
+    def export_fba():
+        if last_fluxes is None or last_fluxes.empty:
+            ui.notify("Run FBA before exporting", color="red")
+            return
+
+        filename = "fba.csv"
+        with open(filename, "w", newline="", encoding="utf-8") as file:
+            writer = csv.writer(file)
+
+            # Ligne 1 : objective value
+            writer.writerow(["Objective value", last_objective_value])
+
+            # Ligne vide
+            writer.writerow([])
+
+            # En‑têtes
+            writer.writerow(["Reaction", "Flux"])
+
+            # Flux
+            for row in last_fluxes.to_dict("records"):
+                writer.writerow([row["Reaction"], row["Flux"]])
+
+        ui.download(filename)
+
 
     ui.button("Run FBA", on_click=run_fba).classes("bg-blue-600 text-white mb-4")
+    ui.button("Export FBA to CSV", on_click=export_fba).classes("mt-4 bg-green-600 text-white")
+
 
     result_fba

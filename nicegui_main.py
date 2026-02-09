@@ -11,8 +11,6 @@ import V1_Bloc4_ui
 import V2_Bloc1_ui
 import V2_Bloc2_ui
 
-
-
 # Read SBML model
 model= load_model()
 
@@ -57,7 +55,7 @@ with ui.tab_panels(tabs, value=tab_voletO).classes('w-full'):
     # Volet 2  : Model
     with ui.tab_panel(tab_volet2):
         with ui.tabs().classes('w-full') as internal_tabs:
-              tab_constraints = ui.tab('Constraints')
+              tab_constraints = ui.tab('Original constraints')
               tab_fba = ui.tab('FBA')
 
         with ui.tab_panels(internal_tabs, value=tab_constraints).classes('w-full'):
@@ -67,7 +65,7 @@ with ui.tab_panels(tabs, value=tab_voletO).classes('w-full'):
             with ui.tab_panel(tab_fba):
                 V2_Bloc2_ui.display(model)
     
-    #Volet 3
+    # Volet 3
     with ui.tab_panel(Tab_volet3):
         ui.label("TO DO")
 
