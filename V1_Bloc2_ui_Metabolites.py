@@ -1,10 +1,10 @@
 from nicegui import ui
 import pandas as pd
 import unicodedata #permet de faire une recherche sans se préoccuper des accents
-
+import io
 
 def display(model):
-    # ---------- Utils ----------
+
     def normalize(text: str) -> str:   #fonction clé pour la recherche
         if not isinstance(text, str):
             return '' #sécurité
@@ -44,6 +44,7 @@ def display(model):
         if isinstance(m.annotation, dict):
             return m.annotation.get('sbo')
         return None
+    
 
 
     # ---------- DataFrame ----------
@@ -75,78 +76,81 @@ def display(model):
     #               "Glucose": "glucose"
     #                }
 
-    # ---------- UI ----------
-    ui.label("Recherche de métabolites").classes('text-h5') 
+
+    ui.label("Search Metabolites").classes("text-2xl font-bold mb-4") 
 
     results = ui.column().classes('q-gutter-md') #conteneur de résultats
 
 
-    # ---------- Affichage des métabolites sélectionnés ----------
-    def show_metabolites(selected_names: list[str]):
+    # Affichage des métabolites sélectionnés
+    def show_metabolites(selected_name: str):
         results.clear()
 
-        if not selected_names:
+        if not selected_name:
             return
 
-        for name in selected_names:
-            row = df[df['Metabolite name'] == name].iloc[0]
+        # Vérifier que le gène existe dans le DataFrame 
+        row_df = df[df['Metabolite name'] == selected_name] 
+        if row_df.empty: 
+            return # évite l'erreur iloc[0] 
 
-            with ui.row().classes('q-gutter-lg'): 
-                 # ← alignement horizontal
-
-                # CARD1 : Infos générales
-                with ui.card().classes('w-96'):
-                    ui.label(f"{row['Metabolite name']}").classes('text-h6')
-                    ui.separator()
-                    ui.label(f"Metabolite ID : {row['Metabolite ID']}")
-                    ui.label(f"Formula : {row['Formula']}")
-                    ui.label(f"Charge : {row['Charge']}")
-                    ui.label(f"Mass : {row['Masses']}")
-
-                # CARD2 : Représentation chimique
-                with ui.card().classes('w-96'):
-                    ui.label("Standard chemical representation").classes('text-h6')
-                    ui.separator()
-                    ui.label(f"InChI : {row['InChI'] or 'Not available'}")
-                    ui.label(f"InChIKey : {row['InChIKey'] or 'Not available'}")
-                    ui.label(f"SMILES : {row['SMILES'] or 'Not available'}")
-                
-                #CARD3 : Références
-                with ui.card().classes('w-96'):
-                    ui.label(" References and interoperability").classes('text-h6')
-                    ui.separator()
-                    ui.label(f"Database : {row['Database'] or 'Not available'}")
-                    ui.label(f"SBO : {row['SBO'] or 'Not available'}")
-                
-                #CARD 4 : Contexte dans le réseau métabolique
-                with ui.card().classes('w-96'):
-                    ui.label(" Context in the metabolic network").classes('text-h6')
-                    ui.separator()
-                    ui.label(f"Number of associated reactions : {row['Count Reactions']}")
-                    ui.label("List of associated reactions:")
-                    with ui.row():
-                        with ui.scroll_area().classes('w-64 h-50 border'):
-                            for reaction in row['Reactions']:
-                                ui.label(reaction)
-                    ui.separator()
-                    ui.label(f"Compartment : {row['Compartment']}")
+        row = row_df.iloc[0]
 
 
-                
+        with ui.row().classes('q-gutter-lg'): 
 
-    # ---------- Select avec autocomplétion avancée ----------
+            # CARD1 : Infos générales
+            with ui.card().classes('w-96'):
+                ui.label(f"{row['Metabolite name']}").classes('text-h6')
+                ui.separator()
+                ui.label(f"Metabolite ID : {row['Metabolite ID']}")
+                ui.label(f"Formula : {row['Formula']}")
+                ui.label(f"Charge : {row['Charge']}")
+                ui.label(f"Mass : {row['Masses']}")
+
+            # CARD2 : Représentation chimique
+            with ui.card().classes('w-96'):
+                ui.label("Standard chemical representation").classes('text-h6')
+                ui.separator()
+                ui.label(f"InChI : {row['InChI'] or 'Not available'}")
+                ui.label(f"InChIKey : {row['InChIKey'] or 'Not available'}")
+                ui.label(f"SMILES : {row['SMILES'] or 'Not available'}")
+            
+            #CARD3 : Références
+            with ui.card().classes('w-96'):
+                ui.label(" References and interoperability").classes('text-h6')
+                ui.separator()
+                ui.label(f"Database : {row['Database'] or 'Not available'}")
+                ui.label(f"SBO : {row['SBO'] or 'Not available'}")
+            
+            #CARD 4 : Contexte dans le réseau métabolique
+            with ui.card().classes('w-96'):
+                ui.label(" Context in the metabolic network").classes('text-h6')
+                ui.separator()
+                ui.label(f"Number of associated reactions : {row['Count Reactions']}")
+                ui.label("List of associated reactions:")
+                with ui.row():
+                    with ui.scroll_area().classes('w-64 h-50 border'):
+                        for reaction in row['Reactions']:
+                            ui.label(reaction)
+                ui.separator()
+                ui.label(f"Compartment : {row['Compartment']}")
+ 
+
+    
+    #  Select avec autocomplétion avancée 
     select = ui.select(
         options=list(name_map.keys()),
-        label='Rechercher un ou plusieurs métabolites',
-        multiple=True,
+        label='Enter matabolite name',
+        multiple=False,
         on_change=lambda e: show_metabolites(e.value)
     ).props(
         'use-input clearable input-debounce=300' #Attente de 300 ms avant déclenchement : meilleure performance
     ).classes('w-96')
 
-    # ---------- Recherche partielle insensible aux accents ----------
+    # Recherche partielle insensible aux accents
     def filter_options(e):
-        query = normalize(e.value)
+        query = normalize(e.args or "")
         if not query:
             select.options = list(name_map.keys())
             return
@@ -156,5 +160,6 @@ def display(model):
             if query in norm
         ]
 
-    select.on('update:model-value', filter_options)
+    select.on("filter", filter_options)
+
 
