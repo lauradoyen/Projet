@@ -144,12 +144,8 @@ with ui.tab_panels(tabs, value=tab_volet0).classes('w-full'):
                         V2_Bloc1_FVA.display(model)
                 ui.button('Show information regarding FVA', on_click=information_model_fva)
 
-    
-<<<<<<< HEAD
     #Volet 3
     with ui.tab_panel(tab_volet3):
-===):
->>>>>>> origin/main
         ui.label("TO DO")
 
 

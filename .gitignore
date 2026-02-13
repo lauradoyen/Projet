@@ -1,0 +1,9 @@
+# Fichiers ignorés
+.vscode/
+
+# Fichiers de données
+fba.csv
+constraints.csv
+
+# Compilation
+__pycache__/
