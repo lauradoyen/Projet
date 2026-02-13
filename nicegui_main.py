@@ -16,7 +16,6 @@ import tempfile
 store = {'model': None}
 
 async def uploads(e):
-    print("EVENT ATTRS:", dir(e))  # vérification
 
     file = e.file        # premier fichier
     data = await e.file.read()        # bytes du fichier
@@ -143,6 +142,8 @@ with ui.tab_panels(tabs, value=tab_volet0).classes('w-full'):
                     else : 
                         V2_Bloc1_FVA.display(model)
                 ui.button('Show information regarding FVA', on_click=information_model_fva)
+
+    
 
     #Volet 3
     with ui.tab_panel(tab_volet3):
