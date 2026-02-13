@@ -148,55 +148,59 @@ def display(model):
 
         if not selected_names:
             return
+        
+        # Vérifier que le gène existe dans le DataFrame 
+        row_df = df[df['Reaction ID'] == selected_names] 
+        if row_df.empty: 
+            return # évite l'erreur iloc[0] 
 
-        for name in selected_names:
-            row = df[df['Reaction ID'] == name].iloc[0]
+        row = row_df.iloc[0]
 
-            with ui.row().classes('q-gutter-lg'): 
-                 # ← alignement horizontal
+        with ui.row().classes('q-gutter-lg'): 
+                # ← alignement horizontal
 
-                # CARD1 : Identification et définition
-                with ui.card().classes('w-96'):
-                    ui.label(row['Reaction ID']).classes('text-h6')
-                    ui.separator()
-                    ui.label(f"Name of the reaction: {row['Name of the reaction']}")
-                    ui.label(f"Formula: {row['Formula']}")
+            # CARD1 : Identification et définition
+            with ui.card().classes('w-96'):
+                ui.label(row['Reaction ID']).classes('text-h6')
+                ui.separator()
+                ui.label(f"Name of the reaction: {row['Name of the reaction']}")
+                ui.label(f"Formula: {row['Formula']}")
+            
+            # CARD2 : Propriétés associées
+            with ui.card().classes('w-96'):
+                ui.label("Properties").classes('text-h6')
+                ui.separator()
+                ui.label(f"Gene–Protein–Reaction association: {row['Gene–Protein–Reaction association']}")
+                ui.label(f"Lower bound: {row['Lower bound']}")
+                ui.label(f"Upper bound: {row['Upper bound']}")
+            
+            # CARD3 : Références et interopérabilités
+            with ui.card().classes('w-96'):
+                ui.label("References and interoperability").classes('text-h6')
+                ui.separator()
+                ui.label(f"Database: {row['Database'] or 'Not available'}")
+                ui.label(f"Enzyme Commission Number: {row['Enzyme Commission Number']}")
+                ui.label(f"SBO: {row['SBO'] or 'Not available'}")
+                ui.label(f"Source of reconstruction: {row['Source of reconstruction']}")
+            
                 
-                # CARD2 : Propriétés associées
-                with ui.card().classes('w-96'):
-                    ui.label("Properties").classes('text-h6')
-                    ui.separator()
-                    ui.label(f"Gene–Protein–Reaction association: {row['Gene–Protein–Reaction association']}")
-                    ui.label(f"Lower bound: {row['Lower bound']}")
-                    ui.label(f"Upper bound: {row['Upper bound']}")
-                
-                # CARD3 : Références et interopérabilités
-                with ui.card().classes('w-96'):
-                    ui.label("References and interoperability").classes('text-h6')
-                    ui.separator()
-                    ui.label(f"Database: {row['Database'] or 'Not available'}")
-                    ui.label(f"Enzyme Commission Number: {row['Enzyme Commission Number']}")
-                    ui.label(f"SBO: {row['SBO'] or 'Not available'}")
-                    ui.label(f"Source of reconstruction: {row['Source of reconstruction']}")
-                
-                
 
 
 
-    # ---------- Select avec autocomplétion avancée ----------
+    # Select avec autocomplétion avancée 
     select = ui.select(
         options=list(name_map.keys()),
-        label='Rechercher une ou plusieurs réactions',
-        multiple=True,
+        label='Enter reaction ID',
+        multiple=False,
         on_change=lambda e: show_reactions(e.value)
     ).props(
         'use-input clearable input-debounce=300' #Attente de 300 ms avant déclenchement : meilleure performance
     ).classes('w-96')
 
 
-    # ---------- Recherche partielle insensible aux accents ----------
+    # Recherche partielle insensible aux accents
     def filter_options(e):
-        query = normalize(e.value)
+        query = normalize(e.args or "")
         if not query:
             select.options = list(name_map.keys())
             return
@@ -206,7 +210,7 @@ def display(model):
             if query in norm
         ]
 
-    select.on('update:model-value', filter_options)
+    select.on('filter', filter_options)
 
 
 

@@ -2,9 +2,10 @@ from nicegui import ui
 import pandas as pd
 import csv 
 
+rows_constraints = None #Variable globale pour le reset du volet 2 
+
 def display(model):
-
-
+    global rows_constraints # Pour le reset du volet 2 
     # Extraction des contraintes
     def get_constraints_min(model):
         return [
@@ -21,13 +22,13 @@ def display(model):
         ]
 
     # Fusion min + max
-    rows = get_constraints_min(model) + get_constraints_max(model)
+    rows_constraints = get_constraints_min(model) + get_constraints_max(model)
 
-    if not rows:
+    if not rows_constraints:
         ui.label("No constraints found").classes("text-red-600")
         return
 
-    df = pd.DataFrame(rows)
+    df = pd.DataFrame(rows_constraints)
 
 
     # Fonction d’export CSV
@@ -38,7 +39,7 @@ def display(model):
         with open(filename, "w", newline="", encoding="utf-8") as file:
             writer = csv.DictWriter(file, fieldnames=fieldnames)
             writer.writeheader()
-            writer.writerows(rows)
+            writer.writerows(rows_constraints)
 
         ui.download(filename)
 

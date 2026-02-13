@@ -112,7 +112,7 @@ with ui.tab_panels(tabs, value=tab_volet0).classes('w-full'):
     # Volet 2  : Model
     with ui.tab_panel(tab_volet2):
         with ui.tabs().classes('w-full') as internal_tabs:
-              tab_constraints = ui.tab('Constraints')
+              tab_constraints = ui.tab('Original constraints')
               tab_fba = ui.tab('FBA')
               tab_fva = ui.tab('FVA')
 
@@ -145,8 +145,11 @@ with ui.tab_panels(tabs, value=tab_volet0).classes('w-full'):
                 ui.button('Show information regarding FVA', on_click=information_model_fva)
 
     
+<<<<<<< HEAD
     #Volet 3
     with ui.tab_panel(tab_volet3):
+===):
+>>>>>>> origin/main
         ui.label("TO DO")
 
 
