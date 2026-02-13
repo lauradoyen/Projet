@@ -44,5 +44,5 @@ with ui.tab_panels(tabs, value=tab_home).classes('w-full'):
 # Lancer appli
 # ---------------------------------------------------------
 print(">>> Lancement de NiceGUI…") 
-ui.run(port=8080, reload=False, show=True)
-print(1) 
+ui.run(port=8081, reload=False, show=True)
+print(1)
