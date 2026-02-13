@@ -131,7 +131,7 @@ def display(model):
 
     objective_select = ui.select(
         options=reactions,
-        value=reactions[0],
+        value="Biomass_rxn" if "Biomass_rxn" in reactions else reactions[0],
         label="Choose objective reaction",
     ).classes("w-96 mb-4")
 
@@ -142,14 +142,16 @@ def display(model):
 
     model.solver = "gurobi"
     
-    def run_fba():
+    def run_fba(mode):
         nonlocal last_fluxes, last_objective_value
         result_fba.clear()
 
         rxn = model.reactions.get_by_id(objective_select.value)
         model.objective = rxn.flux_expression
 
-        solution = model.optimize()
+        # mode = "max" ou "min" 
+        sense = "maximize" if mode == "max" else "minimize" 
+        solution = model.optimize(objective_sense=sense)
 
         # Stockage
         last_objective_value = solution.objective_value
@@ -195,8 +197,16 @@ def display(model):
 
         ui.download(filename)
 
+    ui.button(
+    "Run FBA (maximize)",
+    on_click=lambda: run_fba("max")
+).classes("bg-blue-600 text-white mb-2")
 
-    ui.button("Run FBA", on_click=run_fba).classes("bg-blue-600 text-white mb-4")
+    ui.button(
+        "Run FBA (minimize)",
+        on_click=lambda: run_fba("min")
+    ).classes("bg-purple-600 text-white mb-4")
+
     ui.button("Export FBA to CSV", on_click=export_fba).classes("mt-4 bg-green-600 text-white")
 
 
