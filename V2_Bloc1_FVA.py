@@ -1,91 +1,72 @@
 from nicegui import ui
 import pandas as pd
-import threading
+import csv
 from cobra.flux_analysis import flux_variability_analysis
+import threading
 
-# -----------------------------
-# Fonction FVA (thread-safe)
-# -----------------------------
-def run_fva(model, reactions=None, frac=1.0):
-    model_copy = model.copy()
-    model_copy.solver = "glpk"
-    return flux_variability_analysis(
-        model_copy,
-        reaction_list=reactions,
-        fraction_of_optimum=frac
-    )
-
-# -----------------------------
-# Interface NiceGUI
-# -----------------------------
 def display(model):
+    """Extraction des contraintes"""
+    def get_constraints_min(model):
+        return [{"Reaction": r.id, "Lower bound": r.lower_bound, "Upper bound": ""}
+            for r in model.reactions if r.lower_bound > -1000 and r.lower_bound != 0]
 
-    #ui.label("Flux Variability Analysis (FVA)").classes("text-2xl font-bold")
+    def get_constraints_max(model):
+        return [{"Reaction": r.id, "Lower bound": "", "Upper bound": r.upper_bound}
+            for r in model.reactions if r.upper_bound < 1000 and r.upper_bound != 0]
 
-    reactions = [r.id for r in model.reactions]
+    rows = get_constraints_min(model) + get_constraints_max(model)
+    df_constraints = pd.DataFrame(rows)
 
-    selected_reactions = ui.select(
-        options=reactions,
-        multiple=True,
-        label="Select reactions for FVA (leave empty for all):"
-    ).classes("w-96")
+    """Fonction d’export CSV"""
+    def export_constraints():
+        filename = "constraints.csv"
+        fieldnames = ["Reaction", "Lower bound", "Upper bound"]
 
-    frac_slider = ui.slider(
-        min=0.5,
-        max=1.0,
-        value=1.0,
-        step=0.05
-    ).classes("w-96")
+        with open(filename, "w", newline="", encoding="utf-8") as file:
+            writer = csv.DictWriter(file, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(rows)
 
-    #ui.label("Fraction of optimum (tolerance around the objective)").classes("text-sm text-gray-600")
+        ui.download(filename)
 
-    result_container = ui.column().classes("mt-6")
+    # Interface 
+    with ui.row().classes("gap-6"):
 
-    # Variables pour le thread
-    state = {"thread": None, "result": None, "running": False}
+        # Sélection de l’objectif
+        with ui.column().classes("bg-gray-100 p-4 rounded-lg shadow-md w-96"):
 
-    def start_fva():
-        result_container.clear()
-        result_container.label("FVA calculation running… please wait").classes("text-blue-600")
+            ui.label("Objective selection").classes("text-xl font-semibold mb-2")
 
-        state["running"] = True
-        state["result"] = None
+            reactions = [r.id for r in model.reactions]
+            
+            metabolite_select = ui.select(options=reactions, 
+                multiple = True, 
+                with_input=True,
+                label ="Select several reactions of the model that you want to analyse with FVA").classes('w-64').props('use-chips')
+            
+            ui.label('Please input the fraction of optimum desired for the FVA')
+            fraction_optimum = ui.slider(min=0,max=1,step=0.01, value=1)
+            ui.label().bind_text_from(fraction_optimum, 'value')
 
-        def worker():
-            try:
-                fva_result = run_fva(
-                    model,
-                    selected_reactions.value or None,
-                    frac_slider.value
-                )
-                state["result"] = fva_result
-            except Exception as e:
-                state["result"] = e
-            finally:
-                state["running"] = False
+            def reset_objective():
+                model.objective = None
+                fraction_optimum.value=1
+                ui.notify("Objective reset to zero")
 
-        state["thread"] = threading.Thread(target=worker)
-        state["thread"].start()
-
-    def check_status():
-        if state["running"]:
-            ui.timer(0.5, check_status, once=True)
-        else:
-            result_container.clear()
-
-            if isinstance(state["result"], Exception):
-                result_container.label(f"FVA failed: {state['result']}").classes("text-red-600")
-                return
-
-            fva_df = pd.DataFrame(state["result"])
-            fva_df.reset_index(inplace=True)
-            fva_df.rename(
-                columns={"index": "Reaction", "minimum": "Flux min", "maximum": "Flux max"},
-                inplace=True
+            ui.button("Reset objective", on_click=reset_objective).classes(
+                "mt-2 bg-gray-500 text-white"
             )
 
-            result_container.label("FVA results").classes("text-xl font-semibold")
-            ui.table.from_pandas(fva_df).classes("w-full")
+            grid = ui.aggrid([]).classes('max-h-40')
 
-    ui.button("Run FVA", on_click=lambda: (start_fva(), ui.timer(0.5, check_status, once=True))).classes(
-        "mt-4 bg-blue-600 text-white"
+            # Fonction FVA dans un thread pour éviter blocage
+            def run_fva():
+                solution = flux_variability_analysis(model,metabolite_select.options,fraction_of_optimum=fraction_optimum.value)
+                # Mise à jour des données dans AgGrid
+                grid.data = solution.to_dict(orient='records') 
+
+            ui.button("Run FVA", on_click=run_fva).classes("mt-4 bg-blue-600 text-white")
+
+    # BOUTON EXPORT CSV EN BAS DE PAGE
+    ui.button("Download constraints CSV", on_click=export_constraints).classes("mt-6 bg-green-600 text-white")
+
