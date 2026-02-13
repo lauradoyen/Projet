@@ -5,3 +5,5 @@
 fba.csv
 constraints.csv
 
+# Compilation
+__pycache__/

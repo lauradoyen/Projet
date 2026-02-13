@@ -16,7 +16,6 @@ import tempfile
 store = {'model': None}
 
 async def uploads(e):
-    print("EVENT ATTRS:", dir(e))  # vérification
 
     file = e.file        # premier fichier
     data = await e.file.read()        # bytes du fichier
