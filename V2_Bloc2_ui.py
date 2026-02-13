@@ -197,17 +197,9 @@ def display(model):
 
         ui.download(filename)
 
-    ui.button(
-    "Run FBA (maximize)",
-    on_click=lambda: run_fba("max")
-).classes("bg-blue-600 text-white mb-2")
-
-    ui.button(
-        "Run FBA (minimize)",
-        on_click=lambda: run_fba("min")
-    ).classes("bg-purple-600 text-white mb-4")
-
-    ui.button("Export FBA to CSV", on_click=export_fba).classes("mt-4 bg-green-600 text-white")
-
+    with ui.row().classes("gap-4 mb-4"):
+        ui.button("Run FBA (maximize)", on_click=lambda: run_fba("max")).classes("bg-blue-600 text-white mb-2")
+        ui.button("Run FBA (minimize)", on_click=lambda: run_fba("min")).classes("bg-purple-600 text-white mb-4")
+        ui.button("Export FBA to CSV", on_click=export_fba).classes("bg-green-600 text-white mb-4")
 
     result_fba
