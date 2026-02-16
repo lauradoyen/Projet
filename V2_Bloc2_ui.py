@@ -2,6 +2,7 @@ from nicegui import ui
 import pandas as pd
 import csv
 import V2_Bloc1_ui  as Bloc1 #contraintes du modèle d'origine
+import V1_Bloc2_ui_Reactions as ReacInfo
 
 
 def display(model):
@@ -121,7 +122,6 @@ def display(model):
     grid.on("cellValueChanged", on_grid_edit)
 
     ui.button("Export constraints to CSV", on_click=export_constraints).classes("mt-4 bg-green-600 text-white")
-
     ui.separator().classes("my-6")
 
     # Sélection de la réaction à optimiser
@@ -158,6 +158,7 @@ def display(model):
         last_fluxes = pd.DataFrame({
             "Reaction": [r.id for r in model.reactions if solution.fluxes[r.id] != 0],
             "Flux": [solution.fluxes[r.id] for r in model.reactions if solution.fluxes[r.id] != 0],
+            "Type": [ReacInfo.get_reaction_type(model, r.id) for r in model.reactions if solution.fluxes[r.id] != 0],
         })
 
         # Affichage
@@ -168,6 +169,7 @@ def display(model):
                     columns=[
                         {"name": "Reaction", "label": "Reaction", "field": "Reaction"},
                         {"name": "Flux", "label": "Flux", "field": "Flux"},
+                        {"name": "Type", "label": "Type", "field": "Type"},
                     ],
                     rows=last_fluxes.to_dict("records"),
                 ).classes("w-full")
@@ -189,11 +191,11 @@ def display(model):
             writer.writerow([])
 
             # En‑têtes
-            writer.writerow(["Reaction", "Flux"])
+            writer.writerow(["Reaction", "Flux", "Type"])
 
             # Flux
             for row in last_fluxes.to_dict("records"):
-                writer.writerow([row["Reaction"], row["Flux"]])
+                writer.writerow([row["Reaction"], row["Flux"], row["Type"]])
 
         ui.download(filename)
 
