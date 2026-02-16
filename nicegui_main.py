@@ -155,4 +155,4 @@ with ui.tab_panels(tabs, value=tab_volet0).classes('w-full'):
 # RUN
 # ---------------------------------------------------------
 
-ui.run(port=8081)
+ui.run(port=8081, reload=False)

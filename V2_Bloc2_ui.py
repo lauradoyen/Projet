@@ -140,7 +140,7 @@ def display(model):
     last_fluxes = None
     last_objective_value = None
 
-    model.solver = "gurobi"
+    #model.solver = "gurobi" 
     
     def run_fba(mode):
         nonlocal last_fluxes, last_objective_value
