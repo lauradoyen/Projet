@@ -62,6 +62,11 @@ def display(model):
         except:
             r.upper_bound = 1000
 
+        # Synchroniser le DataFrame df avec la modification utilisateur
+        nonlocal df
+        df.loc[df["Reaction"] == rxn_id, "Lower bound"] = lb
+        df.loc[df["Reaction"] == rxn_id, "Upper bound"] = ub
+
     # Export CSV
     def export_constraints():
         filename = "constraints.csv"
