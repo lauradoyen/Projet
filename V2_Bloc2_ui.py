@@ -1,13 +1,15 @@
 from nicegui import ui
 import pandas as pd
 import csv
-import V2_Bloc1_ui  as Bloc1 #contraintes du modèle d'origine
+import V2_Bloc1_ui as Bloc1  # contraintes du modèle d'origine
 import V1_Bloc2_ui_Reactions as ReacInfo
 
 
 def display(model):
 
-    # Extraction des contraintes 
+    # =========================
+    # Extraction des contraintes
+    # =========================
     def extract_all_constraints(model):
         rows = []
         for r in model.reactions:
@@ -22,7 +24,9 @@ def display(model):
 
     df = extract_all_constraints(model)
 
-    #Appliquer les contraintes du modèle originel 
+    # =========================
+    # Appliquer les contraintes
+    # =========================
     def apply_constraints(df):
         for _, row in df.iterrows():
             r = model.reactions.get_by_id(row["Reaction"])
@@ -40,34 +44,33 @@ def display(model):
             except:
                 r.upper_bound = 1000
 
-
-
-    # Mise à jour du modèle
+    # =========================
+    # Mise à jour modèle si édition grille
+    # =========================
     def on_grid_edit(e):
         row = e.args["data"]
         rxn_id = row["Reaction"]
         r = model.reactions.get_by_id(rxn_id)
 
-        # LB
         lb = row["Lower bound"]
         try:
             r.lower_bound = float(lb)
         except:
             r.lower_bound = -1000
 
-        # UB
         ub = row["Upper bound"]
         try:
             r.upper_bound = float(ub)
         except:
             r.upper_bound = 1000
 
-        # Synchroniser le DataFrame df avec la modification utilisateur
         nonlocal df
         df.loc[df["Reaction"] == rxn_id, "Lower bound"] = lb
         df.loc[df["Reaction"] == rxn_id, "Upper bound"] = ub
 
-    # Export CSV
+    # =========================
+    # Export contraintes
+    # =========================
     def export_constraints():
         filename = "constraints.csv"
         with open(filename, "w", newline="", encoding="utf-8") as file:
@@ -76,10 +79,9 @@ def display(model):
             writer.writerows(df.to_dict("records"))
         ui.download(filename)
 
-    # Interface 
-    ui.label("Constraints table").classes("text-xl font-bold mb-2")
-
-    # Boutons de filtrage uptake
+    # =========================
+    # Filtres
+    # =========================
     def filter_uptake():
         filtered = df[df["Reaction"].str.contains("uptake", case=False, na=False)]
         grid.options["rowData"] = filtered.to_dict("records")
@@ -91,122 +93,159 @@ def display(model):
 
     def reset_constraints():
         nonlocal df
-        df = extract_all_constraints(model) #tableau complet
-        for row in Bloc1.rows_constraints: #réactions originelles 
+        df = extract_all_constraints(model)
+
+        for row in Bloc1.rows_constraints:
             rxn = row["Reaction"]
             df.loc[df["Reaction"] == rxn, "Lower bound"] = row["Lower bound"]
             df.loc[df["Reaction"] == rxn, "Upper bound"] = row["Upper bound"]
-        apply_constraints(df) #appliquer au modèle 
 
-        grid.options["rowData"] = df.to_dict("records") #update 
+        apply_constraints(df)
+
+        grid.options["rowData"] = df.to_dict("records")
         grid.update()
 
         ui.notify("Constraints restored from original model", color="green")
 
-    with ui.row().classes("gap-4 mb-4"):
-        ui.button("Show uptake reactions", on_click=filter_uptake).classes("bg-blue-600 text-white")
-        ui.button("Show all reactions", on_click=reset_filter).classes("bg-gray-500 text-white")
-        ui.button("Reset constraints from original model", on_click=reset_constraints).classes("bg-red-600 text-white mb-4")
-
-    grid = ui.aggrid(
-        {
-            "columnDefs": [
-                {"field": "Reaction", "editable": False},
-                {"field": "Lower bound", "editable": True},
-                {"field": "Upper bound", "editable": True},
-            ],
-            "rowData": df.to_dict("records"),
-            "defaultColDef": {"sortable": True, "filter": True, "resizable": True},
-            "pagination": True,
-            "paginationPageSize": 20,
-            "stopEditingWhenCellsLoseFocus": True,
-        },
-        theme="balham",
-    ).classes("w-full h-96")
-
-    grid.on("cellValueChanged", on_grid_edit)
-
-    ui.button("Export constraints to CSV", on_click=export_constraints).classes("mt-4 bg-green-600 text-white")
-    ui.separator().classes("my-6")
-
-    # Sélection de la réaction à optimiser
-    ui.label("FBA objective selection").classes("text-xl font-bold mb-2")
-
-    reactions = [r.id for r in model.reactions]
-
-    objective_select = ui.select(
-        options=reactions,
-        value="Biomass_rxn" if "Biomass_rxn" in reactions else reactions[0],
-        label="Choose objective reaction",
-    ).classes("w-96 mb-4")
-
-    # Résultat FBA
-    result_fba = ui.column()
+    # =========================
+    # VARIABLES FBA
+    # =========================
     last_fluxes = None
     last_objective_value = None
 
-    #model.solver = "gurobi" 
-    
-    def run_fba(mode):
-        nonlocal last_fluxes, last_objective_value
-        result_fba.clear()
+    # =========================
+    # LAYOUT PRINCIPAL 2 COLONNES
+    # =========================
+    with ui.row().classes("w-full items-start gap-8"):
 
-        rxn = model.reactions.get_by_id(objective_select.value)
-        model.objective = rxn.flux_expression
+        # ==========================================
+        # 🟦 COLONNE 1 : CONTRAINTES
+        # ==========================================
+        with ui.column().classes("bg-gray-100 p-4 rounded-lg shadow-md w-96"):
 
-        # mode = "max" ou "min" 
-        sense = "maximize" if mode == "max" else "minimize" 
-        solution = model.optimize(objective_sense=sense)
+            ui.label("Constraints table").classes("text-xl font-bold mb-2")
 
-        # Stockage
-        last_objective_value = solution.objective_value
-        last_fluxes = pd.DataFrame({
-            "Reaction": [r.id for r in model.reactions if solution.fluxes[r.id] != 0],
-            "Flux": [solution.fluxes[r.id] for r in model.reactions if solution.fluxes[r.id] != 0],
-            "Type": [ReacInfo.get_reaction_type(model, r.id) for r in model.reactions if solution.fluxes[r.id] != 0],
-        })
+            with ui.row().classes("gap-4 mb-4"):
+                ui.button("Show uptake reactions", on_click=filter_uptake)\
+                    .classes("bg-blue-600 text-white")
+                ui.button("Show all reactions", on_click=reset_filter)\
+                    .classes("bg-gray-500 text-white")
+                ui.button("Reset constraints from original model", on_click=reset_constraints)\
+                    .classes("bg-red-600 text-white")
 
-        # Affichage
-        with result_fba:
-            with ui.scroll_area().classes('w-180 h-100 border'):
-                ui.label(f"Objective value: {last_objective_value:.4f}").classes("font-semibold mt-2")
-                ui.table(
-                    columns=[
-                        {"name": "Reaction", "label": "Reaction", "field": "Reaction"},
-                        {"name": "Flux", "label": "Flux", "field": "Flux"},
-                        {"name": "Type", "label": "Type", "field": "Type"},
+            grid = ui.aggrid(
+                {
+                    "columnDefs": [
+                        {"field": "Reaction", "editable": False},
+                        {"field": "Lower bound", "editable": True},
+                        {"field": "Upper bound", "editable": True},
                     ],
-                    rows=last_fluxes.to_dict("records"),
-                ).classes("w-full")
+                    "rowData": df.to_dict("records"),
+                    "defaultColDef": {"sortable": True, "filter": True, "resizable": True},
+                    "pagination": True,
+                    "paginationPageSize": 20,
+                    "stopEditingWhenCellsLoseFocus": True,
+                },
+                theme="balham",
+            ).classes("w-full h-96")
 
+            grid.on("cellValueChanged", on_grid_edit)
 
-    def export_fba():
-        if last_fluxes is None or last_fluxes.empty:
-            ui.notify("Run FBA before exporting", color="red")
-            return
+            ui.button("Export constraints to CSV", on_click=export_constraints)\
+                .classes("mt-4 bg-green-600 text-white")
 
-        filename = "fba.csv"
-        with open(filename, "w", newline="", encoding="utf-8") as file:
-            writer = csv.writer(file)
+        # ==========================================
+        # 🟩 COLONNE 2 : FBA + RESULTATS
+        # ==========================================
+        with ui.column().classes("bg-gray-100 p-4 rounded-lg shadow-md w-96"):
 
-            # Ligne 1 : objective value
-            writer.writerow(["Objective value", last_objective_value])
+            ui.label("FBA objective selection").classes("text-xl font-bold mb-2")
 
-            # Ligne vide
-            writer.writerow([])
+            reactions = [r.id for r in model.reactions]
 
-            # En‑têtes
-            writer.writerow(["Reaction", "Flux", "Type"])
+            objective_select = ui.select(
+                options=reactions,
+                value="Biomass_rxn" if "Biomass_rxn" in reactions else reactions[0],
+                label="Choose objective reaction",
+            ).classes("w-full mb-4")
 
-            # Flux
-            for row in last_fluxes.to_dict("records"):
-                writer.writerow([row["Reaction"], row["Flux"], row["Type"]])
+            # Zone résultats
+            result_fba = ui.column().classes("w-full")
 
-        ui.download(filename)
+            def run_fba(mode):
+                nonlocal last_fluxes, last_objective_value
+                result_fba.clear()
 
-    with ui.row().classes("gap-4 mb-4"):
-        ui.button("Run FBA (maximize)", on_click=lambda: run_fba("max")).classes("bg-blue-600 text-white mb-2")
-        ui.button("Run FBA (minimize)", on_click=lambda: run_fba("min")).classes("bg-purple-600 text-white mb-4")
-        ui.button("Export FBA to CSV", on_click=export_fba).classes("bg-green-600 text-white mb-4")
+                rxn = model.reactions.get_by_id(objective_select.value)
+                model.objective = rxn.flux_expression
 
-    result_fba
+                sense = "maximize" if mode == "max" else "minimize"
+                solution = model.optimize(objective_sense=sense)
+
+                last_objective_value = solution.objective_value
+
+                last_fluxes = pd.DataFrame({
+                    "Reaction": [r.id for r in model.reactions if solution.fluxes[r.id] != 0],
+                    "Flux": [solution.fluxes[r.id] for r in model.reactions if solution.fluxes[r.id] != 0],
+                    "Type": [ReacInfo.get_reaction_type(model, r.id)
+                             for r in model.reactions if solution.fluxes[r.id] != 0],
+                })
+
+                def update_fba_aggrid(start_idx):
+                    result_fba.clear()
+                    ui.label(f"Objective value: {last_objective_value:.4f}").classes("font-semibold mt-2")
+                    if last_fluxes is not None and not last_fluxes.empty:
+                        page_size = 20
+                        end_idx = min(start_idx + page_size, len(last_fluxes))
+                        aggrid = ui.aggrid(
+                            {
+                                "columnDefs": [
+                                    {"field": "Reaction", "headerName": "Reaction", "editable": False},
+                                    {"field": "Flux", "headerName": "Flux", "editable": False},
+                                    {"field": "Type", "headerName": "Type", "editable": False},
+                                ],
+                                "rowData": last_fluxes.iloc[start_idx:end_idx].to_dict("records"),
+                                "defaultColDef": {"sortable": True, "filter": True, "resizable": True},
+                                "pagination": False,
+                            },
+                            theme="balham",
+                        ).classes("w-full h-96")
+                        if len(last_fluxes) > page_size:
+                            ui.slider(
+                                min=0,
+                                max=max(0, len(last_fluxes) - page_size),
+                                value=start_idx,
+                                step=1,
+                                on_change=lambda e: update_fba_aggrid(e.value),
+                                label="Afficher à partir de la ligne :"
+                            ).classes("w-full mt-2")
+                    else:
+                        ui.label("Aucun flux non nul trouvé.")
+
+                update_fba_aggrid(0)
+
+            def export_fba():
+                if last_fluxes is None or last_fluxes.empty:
+                    ui.notify("Run FBA before exporting", color="red")
+                    return
+
+                filename = "fba.csv"
+                with open(filename, "w", newline="", encoding="utf-8") as file:
+                    writer = csv.writer(file)
+
+                    writer.writerow(["Objective value", last_objective_value])
+                    writer.writerow([])
+                    writer.writerow(["Reaction", "Flux", "Type"])
+
+                    for row in last_fluxes.to_dict("records"):
+                        writer.writerow([row["Reaction"], row["Flux"], row["Type"]])
+
+                ui.download(filename)
+
+            with ui.row().classes("gap-4 mb-4"):
+                ui.button("Run FBA (maximize)", on_click=lambda: run_fba("max"))\
+                    .classes("bg-blue-600 text-white")
+                ui.button("Run FBA (minimize)", on_click=lambda: run_fba("min"))\
+                    .classes("bg-purple-600 text-white")
+                ui.button("Export last FBA to CSV", on_click=export_fba)\
+                    .classes("bg-green-600 text-white")
