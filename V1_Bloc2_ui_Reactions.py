@@ -209,7 +209,7 @@ def display(model):
 
     #export json
     def export_infos_reaction_json(): 
-        if len(selected_rows_df)==0: 
+        if len(selected_row_df)==0: 
             ui.notify("No Reaction selected") 
             return 
         
