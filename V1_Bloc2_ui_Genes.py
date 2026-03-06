@@ -1,8 +1,11 @@
 from nicegui import ui
 import pandas as pd
 import unicodedata #permet de faire une recherche sans se préoccuper des accents
+import csv
 
 def display(model):
+
+    selected_row_df = [] #initalise la liste de gènes sélectionnés
 
     
     #INFO GENE
@@ -127,6 +130,8 @@ def display(model):
         
         row = row_df.iloc[0]
 
+        selected_row_df.append(row_df) #màj de la liste de gènes sélectionnés
+
 
         with ui.row().classes('q-gutter-lg'): 
             # ← alignement horizontal
@@ -164,6 +169,57 @@ def display(model):
                         for reaction in row['Reactions']:
                             ui.label(reaction)
             
+    #export csv   
+    def export_infos_gene_csv():
+
+        if len(selected_row_df)==0: 
+            ui.notify("No Gene selected") 
+            return
+            
+        filename = "info_gene.csv"
+        with open(filename, "w", newline="", encoding="utf-8") as file:
+            writer = csv.writer(file)
+
+            # En‑têtes
+            writer.writerow(["Gene ID", "ncbigene", "kegg.genes", "SBO", "refseq", "ncbiprotein", "uniprot", "DeepLoc", "TMHMM", "SignalP", "Number of associated reactions", "List of associated reactions" ])
+
+            # Infos
+            for row_df in selected_row_df:
+                row = row_df.iloc[0]
+                writer.writerow([row["Gene ID"], row["ncbigene"], row["kegg.genes"], row ["SBO"], row ["refseq"], row ["ncbiprotein"], row ["uniprot"], row ["DeepLoc"], row ["TMHMM"],  row ["SignalP"], row ["Count Reactions"], row ["Reactions"]])
+
+        ui.download(filename)
+
+    #export json
+    def export_infos_gene_json(): 
+        if len(selected_rows_df)==0 : 
+            ui.notify("No Gene Selected") 
+            return 
+        
+        row_df = selected_row_df[-1] 
+        row = row_df.iloc[0] 
+        
+        # Construire un dictionnaire propre 
+        data = { "Gene ID": row["Gene ID"], 
+                "ncbigene": row["ncbigene"], 
+                "kegg.genes": row["kegg.genes"], 
+                "SBO": row["SBO"], "refseq": row["refseq"], 
+                "ncbiprotein": row["ncbiprotein"], 
+                "uniprot": row["uniprot"], 
+                "DeepLoc": row["DeepLoc"], 
+                "TMHMM": row["TMHMM"], 
+                "SignalP": row["SignalP"], 
+                "Number of associated reactions": row["Count Reactions"], 
+                "List of associated reactions": row["Reactions"], } 
+        
+        # Convertir en JSON formaté 
+        json_str = pd.Series(data).to_json(indent=4, force_ascii=False) 
+        filename = "info_gene.json" 
+        with open(filename, "w", encoding="utf-8") as f: 
+            f.write(json_str) 
+
+        ui.download(filename)
+    
             
 
 
@@ -191,3 +247,6 @@ def display(model):
 
     select.on('filter', filter_options)
 
+    with ui.dropdown_button('Export Gene(s) Information', auto_close=True):
+        ui.item('.CSV', on_click=export_infos_gene_csv).classes("mt-4 bg-blue-600 text-white")
+        ui.item('.JSON', on_click=export_infos_gene_json).classes("mt-4 bg-blue-600 text-white")
