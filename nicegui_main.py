@@ -164,9 +164,6 @@ with ui.tab_panels(tabs, value=tab_volet0).classes('w-full'):
 
     
     # Table 3 : Analyses with spaghetti plots 
-            
-
-    #Volet 3
     with ui.tab_panel(tab_volet3):
         def information_model_constraints():
             button6.disable()
