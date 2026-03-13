@@ -2,7 +2,6 @@ from nicegui import ui
 import cobra
 from model_utils import load_model
 import os
-#print("VERSION NICEGUI =", nicegui._version_) 
 
 import V1_Bloc1_ui
 import V1_Bloc2_ui_Genes
@@ -17,16 +16,16 @@ import tempfile
 store = {'model': None}
 
 async def uploads(e):
-    file = e.file        # premier fichier
-    data = await e.file.read()        # bytes du fichier
+    file = e.file        # first file 
+    data = await e.file.read()        # bytes of the file
     name = file.name
     file_extension = os.path.splitext(name)[1]
-    # Sauvegarde temporaire
+    # Temporarily save the uploaded file to read it with cobra
     temp = tempfile.NamedTemporaryFile(delete=False, suffix=file_extension)
     temp.write(data)
     temp.close()
 
-    # Lecture du modèle
+    # Model loading with cobra
     model = cobra.io.read_sbml_model(temp.name)
     store['model'] = model
 
@@ -43,11 +42,11 @@ with ui.tabs().classes('w-full') as tabs:
 
 with ui.tab_panels(tabs, value=tab_volet0).classes('w-full'):
 
-    # --- Onglet Home ---
+    # Home table : upload the model and display general information about it
     with ui.tab_panel(tab_volet0):
         ui.label("Upload the model (sbml file) you would like to work on")
         (
-            ui.upload(multiple=True, max_files=1)   # ← ACTIVE LE NOUVEAU COMPOSANT
+            ui.upload(multiple=True, max_files=1)   
                 .on_upload(uploads)
                 .props("accept=.sbml,.xml")
         )
@@ -67,6 +66,7 @@ with ui.tab_panels(tabs, value=tab_volet0).classes('w-full'):
                 on_click=go_to_model_info
         )
     
+    # Table 2 : Navigation in the model
     with ui.tab_panel(tab_volet1):
         with ui.tabs().classes('w-full') as internal_tabs:
               tab_metabolites = ui.tab('Metabolites')
@@ -119,7 +119,7 @@ with ui.tab_panels(tabs, value=tab_volet0).classes('w-full'):
                         V1_Bloc4_ui.display(model)
                 button5=ui.button('Show information regarding exchange reactions', on_click=information_model_exchreaction)
   
-    # Volet 2  : Model
+    # Table 3  : Constraints, FBA and FVA
     with ui.tab_panel(tab_volet2):
         with ui.tabs().classes('w-full') as internal_tabs:
               tab_constraints = ui.tab('Original constraints')
@@ -162,14 +162,9 @@ with ui.tab_panels(tabs, value=tab_volet0).classes('w-full'):
             
 
     
-    #Volet 3
+    # Table 3 : Analyses with spaghetti plots 
     with ui.tab_panel(tab_volet3):
         ui.label("TO DO")
 
-
-
-# ---------------------------------------------------------
-# RUN
-# ---------------------------------------------------------
-
+# Run the NiceGUI app
 ui.run(port=8081)
