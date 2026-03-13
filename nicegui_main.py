@@ -9,8 +9,8 @@ import V1_Bloc2_ui_Metabolites
 import V1_Bloc2_ui_Reactions
 import V1_Bloc4_ui
 import V2_Bloc1_ui
-import V2_Bloc2_ui
-import V2_Bloc1_FVA
+import V2_Bloc2_FBA
+import V2_Bloc3_FVA
 import V3_Bloc1_ui
 import tempfile
 
@@ -147,7 +147,7 @@ with ui.tab_panels(tabs, value=tab_volet0).classes('w-full'):
                         ui.notify('No model loaded yet')
                         button7.enable()
                     else : 
-                        V2_Bloc2_ui.display(model)
+                        V2_Bloc2_FBA.display(model)
                 button7=ui.button('Show information regarding FBA', on_click=information_model_fba)
                 
             with ui.tab_panel(tab_fva):
@@ -158,7 +158,7 @@ with ui.tab_panels(tabs, value=tab_volet0).classes('w-full'):
                         ui.notify('No model loaded yet')
                         button8.enable()
                     else : 
-                        V2_Bloc1_FVA.display(model)
+                        V2_Bloc3_FVA.display(model)
                 button8=ui.button('Show information regarding FVA', on_click=information_model_fva)
             
 
