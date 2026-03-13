@@ -12,6 +12,7 @@ import V1_Bloc4_ui
 import V2_Bloc1_ui
 import V2_Bloc2_ui
 import V2_Bloc1_FVA
+import V3_Bloc1_ui
 import tempfile
 
 store = {'model': None}
@@ -161,15 +162,21 @@ with ui.tab_panels(tabs, value=tab_volet0).classes('w-full'):
                 button8=ui.button('Show information regarding FVA', on_click=information_model_fva)
             
 
-    
     #Volet 3
     with ui.tab_panel(tab_volet3):
-        ui.label("TO DO")
-
+        def information_model_constraints():
+            button6.disable()
+            model=store.get('model')
+            if model is None : 
+                ui.notify('No model loaded yet')
+                button6.enable()
+            else : 
+                V3_Bloc1_ui.display(model)
+        button6=ui.button('Show information regarding analysis', on_click=information_model_constraints)
 
 
 # ---------------------------------------------------------
 # RUN
 # ---------------------------------------------------------
 
-ui.run(port=8081)
+ui.run(port=8081, reload=False) 

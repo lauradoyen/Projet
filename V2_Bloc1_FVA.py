@@ -5,8 +5,10 @@ from cobra.flux_analysis import flux_variability_analysis
 import asyncio
 
 def display(model):
+
     """Extraction des contraintes"""
     original_model=model.copy()
+    model_copy=model.copy()
     def get_constraints(model):
         return [{"Reaction": r.id, "Lower bound": r.lower_bound, "Upper bound": r.upper_bound} for r in model.reactions]
 
@@ -122,11 +124,12 @@ def display(model):
                 fva_grid.update()
 
             objective_reaction=None
-            df=None 
+            df_fva=None 
             # Fonction FVA 
             async def run_fva():
                 nonlocal objective_reaction
-                nonlocal df
+                nonlocal df_fva
+                nonlocal model_copy
                 ui.notify('Please wait for the calculations to be finished')
                 try:
                     clear_grid()
@@ -137,18 +140,18 @@ def display(model):
                         solution = await asyncio.to_thread(flux_variability_analysis,model_copy,fraction_of_optimum=fraction_optimum.value,)
                     else : 
                         solution = await asyncio.to_thread(flux_variability_analysis,model_copy,reaction_list=metabolite_select.value,fraction_of_optimum=fraction_optimum.value,)
-                    df = solution.reset_index()
-                    fva_grid.options['columnDefs'] = [{'headerName': col, 'field': col} for col in df.columns]
-                    fva_grid.options['rowData'] = df.to_dict(orient='records')
+                    df_fva = solution.reset_index()
+                    fva_grid.options['columnDefs'] = [{'headerName': col, 'field': col} for col in df_fva.columns]
+                    fva_grid.options['rowData'] = df_fva.to_dict(orient='records')
                     fva_grid.update()
                     ui.notify("The results are available ")
                 except Exception as err:
                     ui.notify(f"Error: {err}", color='red')
             def result_fva():
                 if fva_grid.options['rowData'] == []:
-                    ui.notify("Run FBA before exporting", color="red")
+                    ui.notify("Run before exporting", color="red")
                     return
-                rows = get_constraints(model)
+                rows = get_constraints(model_copy)
                 table_constraints = pd.DataFrame(rows)
                 meta_df = pd.DataFrame({
         "Objective reaction": [objective_reaction.id],
@@ -158,9 +161,73 @@ def display(model):
                     f.write("Summary\n")
                     meta_df.to_csv(f, index=False)
                     f.write("\nFVA Results\n")
-                    df.to_csv(f, index=False)
+                    df_fva.to_csv(f, index=False)
                     f.write("\nConstraints\n")
                     table_constraints.to_csv(f, index=False)
                 ui.download("fva_results.csv")
             ui.button("Run FVA", on_click=run_fva).classes("mt-4 bg-blue-600 text-white")
             ui.button("export FVA results", on_click=result_fva).classes("mt-4 bg-blue-600 text-white")
+        
+
+        with ui.column().classes("bg-gray-100 p-4 rounded-lg shadow-md w-96"):
+
+            ui.label("Find the reversible reactions and reactions with a fixed flux").classes("text-xl font-semibold mb-2")
+            ui.label('The reversible reactions and reactions with a fixed flux will be calculated using the current results shown for the FVA')
+            zone = ui.aggrid(
+    {
+        "columnDefs": [
+            {"field": "Reaction"},
+        ],
+        "rowData": [],
+        "defaultColDef": {"sortable": True, "filter": True, "resizable": True},
+    },
+    theme="balham"
+).classes("w-full h-96")    
+            async def find_fixed_reactions():
+                if fva_grid.options['rowData'] == []:
+                    ui.notify("Run FVA before showing these caracteristics ", color="red")
+                    return 
+                zone.clear()
+                flux_reaction=[{
+                "Reaction": r} for r in df_fva.loc[(df_fva["minimum"] == df_fva["maximum"]) & (df_fva["minimum"] != 0), "index"]]
+                zone.options['rowData'] =flux_reaction
+                zone.update()
+                ui.notify("the results of the fixed flux reactions are available ")
+            ui.button('Show fixed flux reactions',on_click=find_fixed_reactions)
+            async def find_reversible_reactions():
+                if fva_grid.options['rowData'] == []:
+                    ui.notify("Run FVA before showing these caracteristics ", color="red")
+                    return
+                zone.clear()
+                reversible_reaction = [
+    {"Reaction": r}
+    for r in df_fva.loc[df_fva["minimum"] * df_fva["maximum"] < 0, "index"]
+]
+                zone.options['rowData'] =reversible_reaction
+                zone.update()
+                ui.notify("The reversible reactions are available")
+            ui.button('Show reversible reactions', on_click=find_reversible_reactions)
+            async def show_blocked_status():
+                if fva_grid.options['rowData'] == []:
+                    ui.notify("Run FVA before showing these caracteristics ", color="red")
+                    return
+                zone.clear()
+                blocked_reaction=[{
+                "Reaction": r} for r in df_fva.loc[(df_fva["minimum"] == df_fva["maximum"]) & (df_fva["minimum"] == 0), "index"]]
+                zone.options['rowData'] =blocked_reaction
+                zone.update()
+                ui.notify("The blocked reactions are available")
+            ui.button("show blocked reactions", on_click=show_blocked_status).classes("mt-4 bg-blue-600 text-white")
+            async def show_active_status():
+                if fva_grid.options['rowData'] == []:
+                    ui.notify("Run FVA before showing these caracteristics ", color="red")
+                    return
+                zone.clear()
+                active_reaction = [{
+                "Reaction": r} for r in df_fva.loc[df_fva["minimum"] != df_fva["maximum"], "index"]]
+                zone.options['rowData'] =active_reaction
+                zone.update()
+                ui.notify("The active reactions are available")
+            ui.button("show active reactions",on_click=show_active_status).classes("mt-4 bg-blue-600 text-white")
+
+        
