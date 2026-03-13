@@ -5,6 +5,9 @@ Prise en main/
 # Fichiers de données
 fba.csv
 constraints.csv
+fva_results.csv
+info_metabolite.csv
+blocked_reaction.csv
 
 # Compilation
 __pycache__/
