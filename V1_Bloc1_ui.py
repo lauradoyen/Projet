@@ -7,6 +7,7 @@ def display(model):
 
     ui.label("ID card of the model").classes("text-2xl font-bold mb-4")
 
+    # Function to split metabolite ID into name and compartment
     def split_metabolite_info(metabolites):
         liste_meta = []
         liste_comp = []
@@ -21,15 +22,15 @@ def display(model):
     metabolites = model.metabolites
     liste_meta, liste_comp = split_metabolite_info(metabolites)
 
-    # Compartiments
+    # Compartments
     Name = list(model.compartments.values())
     Id = list(model.compartments.keys())
 
-    # Nombre de métabolites par compartiment
+    # Number of metabolites per compartment
     Number_of_metabolites = [len([met for met in model.metabolites 
             if met.compartment == comp_id]) for comp_id in Id]
 
-    # Nombre de dead-ends (impliqués dans une seule réaction)
+    # Number of dead-ends (involved in one reaction)
     def find_dead_end_metabolites(model): 
         dead_ends = [] 
         for m in model.metabolites: 
@@ -40,9 +41,9 @@ def display(model):
     Dead_ends = find_dead_end_metabolites(model) 
 
 
-    with ui.row().classes("gap-6"): #Visualisation en colonnes
+    with ui.row().classes("gap-6"): #Visualisation in columns
 
-        # Informations générales
+        # General information about the model
         with ui.column().classes("bg-gray-100 p-4 rounded-lg shadow-md w-80"):
             ui.label(f"Number of metabolites: {len(model.metabolites)}")
             ui.label(f"Number of reactions: {len(model.reactions)}")
