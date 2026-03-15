@@ -12,6 +12,7 @@ import V2_Bloc1_ui
 import V2_Bloc2_FBA
 import V2_Bloc3_FVA
 import V3_Bloc1_ui
+import V3_Bloc2_ui
 import tempfile
 
 store = {'model': None}
@@ -165,15 +166,33 @@ with ui.tab_panels(tabs, value=tab_volet0).classes('w-full'):
     
     # Table 3 : Analyses with spaghetti plots 
     with ui.tab_panel(tab_volet3):
-        def information_model_constraints():
-            button6.disable()
-            model=store.get('model')
-            if model is None : 
-                ui.notify('No model loaded yet')
-                button6.enable()
-            else : 
-                V3_Bloc1_ui.display(model)
-        button6=ui.button('Show information regarding analysis', on_click=information_model_constraints)
+        with ui.tabs().classes('w-full') as internal_tabs:
+              tab_analyses = ui.tab('Sensitivity to nutritional environment analyses')
+              tab_analyses_p = ui.tab('Application to the Penicillin G')
+
+    with ui.tab_panels(internal_tabs, value=tab_constraints).classes('w-full'):
+        with ui.tab_panel(tab_analyses):
+            def information_model_analyses():
+                button6.disable()
+                model=store.get('model')
+                if model is None : 
+                    ui.notify('No model loaded yet')
+                    button6.enable()
+                else : 
+                    V3_Bloc1_ui.display(model)
+            button6=ui.button('Show information regarding analysis', on_click=information_model_analyses)
+
+        
+        with ui.tab_panel(tab_analyses):
+            def information_model_analyses_p():
+                button6.disable()
+                model=store.get('model')
+                if model is None : 
+                    ui.notify('No model loaded yet')
+                    button6.enable()
+                else : 
+                    V3_Bloc2_ui.display(model)
+            button6=ui.button('Show information regarding analysis', on_click=information_model_analyses_p)
 
 
 # ---------------------------------------------------------
