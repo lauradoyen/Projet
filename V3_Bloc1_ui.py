@@ -1,12 +1,13 @@
-from nicegui import ui
+import nicegui
+from nicegui import ui, run
 import pandas as pd
 import cobra
 import numpy as np
 import io
 import matplotlib.pyplot as plt
 import matplotlib
+import threading
 
-print(matplotlib.get_backend())
 
 from src.report_utils import *
 from src.Sensitivity_to_nutritional_environment import *
@@ -17,149 +18,220 @@ cobra.Configuration().solver = "gurobi"
 
 
 def display(model):
-    import gurobipy as gp
-    cobra.Configuration().solver = "gurobi"
 
-    # Liste des uptakes disponibles
-    uptake_list = list(model.medium.keys())
-
-    ui.label("Select uptakes to analyse").classes("text-xl font-bold")
-
-    select_uptakes = ui.select(
-        options=uptake_list,
-        label="Choose one or more uptakes",
-        multiple=True,
-        with_input=True
-    ).classes("w-96").props('use-chips')
-
-    analysis_results = {"df": None, "selected": None}
-
-
+    def is_exchange_reaction(rxn):
+    # Une réaction d’échange a un seul métabolite
+        return len(rxn.metabolites) == 1
+    
+    def get_associated_metabolite(rxn):
+        return list(rxn.metabolites.keys())[0].id
     
 
-    
-    def run_analysis():
+    uptake_data = []
+    uptake_list=[]
 
-        selected = select_uptakes.value #selected = ['...', '...', ...]
+    for rxn in model.reactions:
+        if not is_exchange_reaction(rxn):
+            continue
 
-        if not selected:
-            ui.notify("Select at least one uptake.", color="red")
-            return
+        if "uptake" not in rxn.id.lower():
+            continue
 
-        # Analyse uniquement sur les uptakes choisis
-        dfs = []
-        for uptake in selected:
+        data = {
+            "Reaction ID": rxn.id,
+            "Associated metabolite": get_associated_metabolite(rxn),
+        }
 
-            df = perform_robustness_analysis(
-                model=model,
-                uptake_rxns=[uptake],
-                obj_rxn="Biomass_rxn",
-                value_ub=20,
-                change_bounds=True,
-                n_points=50
-            )
-            dfs.append(df)
-
-        df = pd.concat(dfs, ignore_index=True)
-
-        analysis_results["df"] = df
-        analysis_results["selected"] = selected
-
-        ui.notify("Analysis completed.", color="green")
-
-    # Fonctions
-    def single_uptake (): 
-
-        plots_single_container.clear()
-
-        df = analysis_results["df"]
-        selected = analysis_results["selected"]
-
-        if df is None:
-            ui.notify("Run the analysis first.", color="red")
-            return
         
-        with plots_single_container:
-            print("SELECTED:", selected)
+        uptake_list.append(rxn.id)
+        uptake_data.append(data)
+
+
+    df_uptake = pd.DataFrame(uptake_data)
+
     
-            for uptake in selected:
+    with ui.row().classes("gap-4"):
+        # -------- Colonne droite : FBA --------
+        with ui.column().classes("bg-gray-100 p-4 rounded-lg shadow-md w-250"):
 
-                df_u = df[df["Uptake"] == uptake]
+            ui.label("Select uptakes to analyse").classes("text-xl font-bold")
 
-                xlabel = f"{uptake}\n(mmol·gDW⁻¹·h⁻¹)"
+            select_uptakes = ui.select(
+                options=uptake_list,
+                label="Choose one or more uptakes",
+                multiple=True,
+                with_input=True
+            ).classes("w-96").props('use-chips')
 
-                fig, ax = robustness_analysis_plot(
-                    data=df_u,
-                    xlabel=xlabel,
-                    ylabel="Growth rate\n(h⁻¹)",
-                    filter_uptakes=[uptake],
-                    experimental_value=0.20,
-                    point_intersection=True,
-                    legend=True
-                )
+            ui.label("Choose experimental growth rate to display on plots (h⁻¹)").classes("text-xl font-bold")
+            experimental_input = ui.number(
+            label="Experimental growth rate",
+            value=0.20,
+            min=0,
+            step=0.01,
+            format="%.2f"
+        ).classes("w-40")
 
-                with ui.pyplot() as p:
-                    p.fig = fig
-
+        
+            analysis_results = {"df": None, "selected": None}
 
 
-    def multiple_uptakes (): 
+            async def run_analysis():
 
-        plots_multi_container.clear()
+                print(">>> ANALYSE START")#
 
-        df = analysis_results["df"]
-        selected = analysis_results["selected"]
+                selected = select_uptakes.value #selected = ['...', '...', ...]
+                if not selected:
+                    ui.notify("Select at least one uptake.", color="red")
+                    return
+                
+                print("selected:", selected)#
+                    
+                def worker():
+                    # Analyse uniquement sur les uptakes choisis
+                    dfs = []
+                    for uptake in selected:
 
-        if df is None:
-            ui.notify("Run the analysis first.", color="red")
-            return
 
-        with plots_multi_container:
+                        df = perform_robustness_analysis(
+                            model=model,
+                            uptake_rxns=[uptake],
+                            obj_rxn="Biomass_rxn",
+                            value_ub=20,
+                            change_bounds=True,
+                            n_points=50
+                        )
+                        dfs.append(df)
 
-            ui.label("Select uptake to highlight").classes("text-xl font-bold")
+                        print("Processing uptake:", uptake)
+                    return pd.concat(dfs, ignore_index=True)
 
-            select_highlighted_uptake = ui.select(
-                options=selected,
-                label="Choose one uptake",
-            ).classes("w-96")
+                df = await run.io_bound(worker)
 
-            plot_area = ui.column()
+                analysis_results["df"] = df
+                analysis_results["selected"] = selected
 
-            def plot_multiple() : 
+                print(">>> ANALYSE END")
 
-                plot_area.clear()
+                ui.notify("Sensitivity analysis completed.", color="green")
+
+            # Fonctions
+            def single_uptake (): 
+
+                plots_single_container.clear()
+
+                df = analysis_results["df"]
+                selected = analysis_results["selected"]
+
+                if df is None:
+                    ui.notify("Run the analysis first.", color="red")
+                    return
+                
+                with plots_single_container:
+                    print("SELECTED:", selected)
             
-                fig, ax = robustness_analysis_plot(
-                    data=df,
-                    xlabel="Uptake flux\n(mmol·gDW⁻¹·h⁻¹)",
-                    ylabel="Growth rate\n(h⁻¹)",
-                    filter_uptakes=selected,
-                    highlight=select_highlighted_uptake.value,
-                    experimental_value=0.20,
-                    point_intersection=True,
-                    legend=True
-                )
-                
-                
-                with ui.pyplot() as p:
-                    p.fig = fig
-                print("FIG TYPE:", type(fig))
+                    for uptake in selected:
 
-            ui.button("Generate plot", on_click=plot_multiple).classes("mt-4 bg-blue-600 text-white")
+                        df_u = df[df["Uptake"] == uptake]
 
-    with ui.tabs() as tabs:
-        tab1 = ui.tab("One uptake per graph")
-        tab2 = ui.tab("Multiple uptakes")
+                        xlabel = f"{uptake}\n(mmol·gDW⁻¹·h⁻¹)"
 
-    with ui.tab_panels(tabs):
+                        fig, ax = robustness_analysis_plot(
+                            data=df_u,
+                            xlabel=xlabel,
+                            ylabel="Growth rate\n(h⁻¹)",
+                            filter_uptakes=[uptake],
+                            experimental_value=experimental_input.value,
+                            point_intersection=True,
+                            legend=True
+                        )
 
-        with ui.tab_panel(tab1):
-            ui.button("Show graphs", on_click=single_uptake)
-            plots_single_container = ui.column()
+                        with ui.pyplot() as p:
+                            p.fig = fig
 
-        with ui.tab_panel(tab2):
-            ui.button("Prepare plot", on_click=multiple_uptakes)
-            plots_multi_container = ui.column()
 
-    ui.button("Run analysis", on_click=run_analysis)
-    ui.label("Once you clicked on the button Run analysis please wait until the anaLysis is completed")
+
+            def multiple_uptakes (): 
+
+                plots_multi_container.clear()
+
+                df = analysis_results["df"]
+                selected = analysis_results["selected"]
+
+                if df is None:
+                    ui.notify("Run the analysis first.", color="red")
+                    return
+
+                with plots_multi_container:
+
+                    ui.label("Select uptake to highlight").classes("text-xl font-bold")
+
+                    select_highlighted_uptake = ui.select(
+                        options=selected,
+                        label="Choose one uptake",
+                    ).classes("w-96")
+
+                    plot_area = ui.column()
+
+                    def plot_multiple() : 
+
+                        plot_area.clear()
+                    
+                        fig, ax = robustness_analysis_plot(
+                            data=df,
+                            xlabel="Uptake flux\n(mmol·gDW⁻¹·h⁻¹)",
+                            ylabel="Growth rate\n(h⁻¹)",
+                            filter_uptakes=selected,
+                            highlight=select_highlighted_uptake.value,
+                            experimental_value=experimental_input.value,
+                            point_intersection=True,
+                            legend=True
+                        )
+                        
+                        
+                        with ui.pyplot() as p:
+                            p.fig = fig
+                        print("FIG TYPE:", type(fig))
+
+                    ui.button("Generate plot", on_click=plot_multiple).classes("mt-4 bg-blue-600 text-white")
+
+            ui.button("Run analysis", on_click=run_analysis)
+            ui.label("Once you clicked on the button Run analysis please wait until the analysis is completed")
+
+
+            with ui.tabs() as tabs:
+                tab1 = ui.tab("One uptake per graph")
+                tab2 = ui.tab("Multiple uptakes")
+
+            with ui.tab_panels(tabs):
+
+                with ui.tab_panel(tab1):
+                    ui.button("Show graphs", on_click=single_uptake)
+                    plots_single_container = ui.column()
+
+                with ui.tab_panel(tab2):
+                    ui.button("Prepare plot", on_click=multiple_uptakes)
+                    plots_multi_container = ui.column()
+    
+
+        # -------- Colonne gauche : contraintes --------
+        with ui.column().classes("bg-gray-100 p-4 rounded-lg shadow-md w-96"):
+
+            ui.label("Uptake ID ⭤  Associated metabolite").classes("text-xl font-bold mt-6")
+
+
+            ui.aggrid({
+                "columnDefs": [
+                    {"headerName": "Reaction ID", "field": "Reaction ID", "filter": True},
+                    {"headerName": "Associated metabolite", "field": "Associated metabolite", "filter": True},
+                ],
+                "rowData": df_uptake.to_dict("records"),
+                "defaultColDef": {
+                    "resizable": True,
+                    "sortable": True,
+                    "floatingFilter": True,
+                },
+            }).classes("w-full h-96")
+
+            
+            
