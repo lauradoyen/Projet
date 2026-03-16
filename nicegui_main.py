@@ -15,7 +15,7 @@ import V3_Bloc1_ui
 import V3_Bloc2_ui
 import tempfile
 
-store = {'model': None}
+store = {'model': None} # 
 
 async def uploads(e):
     file = e.file        # first file 
