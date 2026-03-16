@@ -6,17 +6,18 @@ import V1_Bloc2_ui_Reactions as ReacInfo
 
 def display(model):
 
-    # ---------- Extraction des contraintes ----------
+    # Constraints extraction 
     def extract_all_constraints(model):
         rows = []
         for r in model.reactions:
-            lb = None if r.lower_bound in (-1000, 0) else r.lower_bound
-            ub = None if r.upper_bound in (1000, 0) else r.upper_bound
+            lb = None if r.lower_bound in (-1000, 0) else r.lower_bound #no trivial lower bound 
+            ub = None if r.upper_bound in (1000, 0) else r.upper_bound #no trivial upper bound
             rows.append({"Reaction": r.id, "Lower bound": lb or "", "Upper bound": ub or ""})
         return pd.DataFrame(rows)
 
     df = extract_all_constraints(model)
 
+    # Functions to apply constraints modifications from the grid to the model
     def apply_constraints(df):
         for _, row in df.iterrows():
             r = model.reactions.get_by_id(row["Reaction"])
@@ -33,6 +34,7 @@ def display(model):
         try: r.upper_bound = float(row["Upper bound"])
         except: r.upper_bound = 1000
 
+    # Function to export constraints to CSV
     def export_constraints():
         filename = "constraints.csv"
         with open(filename, "w", newline="", encoding="utf-8") as file:
@@ -41,24 +43,27 @@ def display(model):
             writer.writerows(df.to_dict("records"))
         ui.download(filename)
 
-    # ---------- Interface principale ----------
+    # Title of the page
     ui.label("Model constraints and FBA").classes("text-xl font-bold mb-2")
 
     with ui.row().classes("gap-4"):
 
-        # -------- Colonne gauche : contraintes --------
+        # Left column : constraints table
         with ui.column().classes("bg-gray-100 p-4 rounded-lg shadow-md w-96"):
             ui.label("Constraints table").classes("text-lg font-bold mb-2")
 
+            # Filter to show only uptake reactions (assuming they contain "uptake" in their ID or name)
             def filter_uptake():
                 filtered = df[df["Reaction"].str.contains("uptake", case=False, na=False)]
                 grid.options["rowData"] = filtered.to_dict("records")
                 grid.update()
 
+            # Reset filter to show all reactions
             def reset_filter():
                 grid.options["rowData"] = df.to_dict("records")
                 grid.update()
 
+            # Reset constraints to original model values
             def reset_constraints():
                 nonlocal df
                 df = extract_all_constraints(model)
@@ -71,6 +76,7 @@ def display(model):
                 grid.update()
                 ui.notify("Constraints restored from original model", color="green")
 
+            # Buttons to filter and reset constraints
             with ui.row().classes("gap-2 mb-2"):
                 ui.button("Show uptake reactions", on_click=filter_uptake).classes("bg-blue-600 text-white")
                 ui.button("Show all reactions", on_click=reset_filter).classes("bg-gray-500 text-white")
@@ -90,7 +96,7 @@ def display(model):
             grid.on("cellValueChanged", on_grid_edit)
             ui.button("Export constraints to CSV", on_click=export_constraints).classes("mt-2 bg-green-600 text-white")
 
-        # -------- Colonne droite : FBA --------
+        # Right column : FBA results and objective selection
         with ui.column().classes("bg-gray-100 p-4 rounded-lg shadow-md w-96"):
 
             ui.label("FBA objective selection").classes("text-lg font-bold mb-2")
@@ -105,7 +111,7 @@ def display(model):
             last_objective_value = None
             objective_label = ui.label("").classes("font-semibold mt-2")
 
-            # Zone pour afficher les résultats
+            # Data grid to display FBA results
             zone_fba = ui.aggrid(
     {
         "columnDefs": [
@@ -122,7 +128,7 @@ def display(model):
                 zone_fba.options['rowData'] = []
                 zone_fba.update()
               
-            # ---------- Fonctions FBA ----------
+            # Function to run FBA and display results
             def run_fba(mode):
                 nonlocal last_fluxes, last_objective_value
                 nonlocal objective_label
@@ -142,12 +148,12 @@ def display(model):
                 })
                 objective_label.text = f"Objective value: {last_objective_value:.4f}"
                 if not last_fluxes.empty:
-                    #with ui.scroll_area().classes("w-full h-80 border p-2")
                     zone_fba.options['rowData'] = last_fluxes.to_dict(orient='records')
                     zone_fba.update() 
                 else:
                     ui.label("No fluxes different from zero").classes("text-red-600")
 
+            # Function to export FBA results to CSV
             def export_fba():
                 if last_fluxes is None or last_fluxes.empty:
                     ui.notify("Run FBA before exporting", color="red")
@@ -162,7 +168,7 @@ def display(model):
                         writer.writerow([row["Reaction"],row["Flux"],row["Type"]])
                 ui.download(filename)    
 
-            # ---------- Boutons FBA visibles en haut ----------
+            # Buttons to run FBA and export results
             ui.button("Run FBA (maximize)", on_click=lambda: run_fba("max")).classes("bg-blue-600 text-white")
             ui.button("Run FBA (minimize)", on_click=lambda: run_fba("min")).classes("bg-purple-600 text-white")
             ui.button("Export FBA to CSV", on_click=export_fba).classes("bg-green-600 text-white") 

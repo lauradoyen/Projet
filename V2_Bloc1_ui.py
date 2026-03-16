@@ -2,11 +2,12 @@ from nicegui import ui
 import pandas as pd
 import csv 
 
-rows_constraints = None #Variable globale pour le reset du volet 2 
+rows_constraints = None 
 
 def display(model):
-    global rows_constraints # Pour le reset du volet 2 
-    # Extraction des contraintes
+    global rows_constraints # Global variable to store constraints for reset functionality in V2_Bloc2_ui
+
+    # Extraction of constraints from the model
     def get_constraints_min(model):
         return [
             {"Reaction": r.id, "Lower bound": r.lower_bound, "Upper bound": ""}
@@ -21,7 +22,7 @@ def display(model):
             if r.upper_bound < 1000 and r.upper_bound != 0
         ]
 
-    # Fusion min + max
+    # Fetch min and max constraints and store in global variable
     rows_constraints = get_constraints_min(model) + get_constraints_max(model)
 
     if not rows_constraints:
@@ -31,7 +32,7 @@ def display(model):
     df = pd.DataFrame(rows_constraints)
 
 
-    # Fonction d’export CSV
+    # Function to export constraints to CSV
     def export_constraints():
         filename = "constraints.csv"
         fieldnames = ["Reaction", "Lower bound", "Upper bound"]
@@ -44,8 +45,8 @@ def display(model):
         ui.download(filename)
 
 
-    # Tableau AG‑Grid 
-    ui.label("Constraints table").classes("text-xl font-bold mb-2")
+    # Title of the page
+    ui.label("Model constraints").classes("text-xl font-bold mb-2")
 
     ui.aggrid(
         {
@@ -66,7 +67,7 @@ def display(model):
         theme="balham",
     ).classes("w-full h-96")
 
-    # Bouton d’export CSV
+    # Export button
     ui.button(
         "Export constraints to CSV",
         on_click=export_constraints

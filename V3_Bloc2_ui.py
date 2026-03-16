@@ -18,6 +18,8 @@ cobra.Configuration().solver = "gurobi"
 
 def display(model):
 
+    ui.label(f"This section focuses only on the genome-scale metabolic network of Penicillium rubens").classes("text-xl font-bold")
+
     def is_exchange_reaction(rxn):
     # Une réaction d’échange a un seul métabolite
         return len(rxn.metabolites) == 1
@@ -50,8 +52,10 @@ def display(model):
 
     
     with ui.row().classes("gap-4"):
-        # -------- Colonne droite : FBA --------
+        # -------- Colonne gauche --------
         with ui.column().classes("bg-gray-100 p-4 rounded-lg shadow-md w-270"):
+
+            ui.label("Sensitivity analysis for the production of Penicillin G").classes("text-x3 font-bold")
 
             ui.label("Select uptakes to analyse").classes("text-xl font-bold")
 
@@ -61,15 +65,6 @@ def display(model):
                 multiple=True,
                 with_input=True
             ).classes("w-96").props('use-chips')
-
-            ui.label("Choose experimental growth rate to display on plots (h⁻¹)").classes("text-xl font-bold")
-            experimental_input = ui.number(
-            label="Experimental growth rate",
-            value=0.20,
-            min=0,
-            step=0.01,
-            format="%.2f"
-        ).classes("w-40")
 
         
             analysis_results = {"df": None, "selected": None}
@@ -95,7 +90,7 @@ def display(model):
                         df = perform_robustness_analysis(
                             model=model,
                             uptake_rxns=[uptake],
-                            obj_rxn="Biomass_rxn",
+                            obj_rxn="Production_004",
                             value_ub=20,
                             change_bounds=True,
                             n_points=50
@@ -138,9 +133,9 @@ def display(model):
                         fig, ax = robustness_analysis_plot(
                             data=df_u,
                             xlabel=xlabel,
-                            ylabel="Growth rate\n(h⁻¹)",
+                            ylabel="Production of Penicillin G\n(h⁻¹)",
                             filter_uptakes=[uptake],
-                            experimental_value=experimental_input.value,
+                            experimental_value=0.20,
                             point_intersection=True,
                             legend=True
                         )
@@ -182,7 +177,7 @@ def display(model):
                             ylabel="Growth rate\n(h⁻¹)",
                             filter_uptakes=selected,
                             highlight=select_highlighted_uptake.value,
-                            experimental_value=experimental_input.value,
+                            experimental_value=0.20,
                             point_intersection=True,
                             legend=True
                         )
@@ -213,7 +208,7 @@ def display(model):
                     plots_multi_container = ui.column()
     
 
-        # -------- Colonne gauche : contraintes --------
+        # -------- Colonne gauche --------
         with ui.column().classes("bg-gray-100 p-4 rounded-lg shadow-md w-130"):
 
             ui.label("Uptake ID ⭤  Associated metabolite").classes("text-xl font-bold mt-6")

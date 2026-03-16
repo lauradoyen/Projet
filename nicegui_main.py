@@ -9,24 +9,25 @@ import V1_Bloc2_ui_Metabolites
 import V1_Bloc2_ui_Reactions
 import V1_Bloc4_ui
 import V2_Bloc1_ui
-import V2_Bloc2_ui
-import V2_Bloc1_FVA
+import V2_Bloc2_FBA
+import V2_Bloc3_FVA
 import V3_Bloc1_ui
+import V3_Bloc2_ui
 import tempfile
 
 store = {'model': None} # 
 
 async def uploads(e):
-    file = e.file        # premier fichier
-    data = await e.file.read()        # bytes du fichier
+    file = e.file        # first file 
+    data = await e.file.read()        # bytes of the file
     name = file.name
     file_extension = os.path.splitext(name)[1]
-    # Sauvegarde temporaire
+    # Temporarily save the uploaded file to read it with cobra
     temp = tempfile.NamedTemporaryFile(delete=False, suffix=file_extension)
     temp.write(data)
     temp.close()
 
-    # Lecture du modèle
+    # Model loading with cobra
     model = cobra.io.read_sbml_model(temp.name)
     store['model'] = model
 
@@ -43,11 +44,11 @@ with ui.tabs().classes('w-full') as tabs:
 
 with ui.tab_panels(tabs, value=tab_volet0).classes('w-full'):
 
-    # --- Onglet Home ---
+    # Home table : upload the model and display general information about it
     with ui.tab_panel(tab_volet0):
         ui.label("Upload the model (sbml file) you would like to work on")
         (
-            ui.upload(multiple=True, max_files=1)   # ← ACTIVE LE NOUVEAU COMPOSANT
+            ui.upload(multiple=True, max_files=1)   
                 .on_upload(uploads)
                 .props("accept=.sbml,.xml")
         )
@@ -67,6 +68,7 @@ with ui.tab_panels(tabs, value=tab_volet0).classes('w-full'):
                 on_click=go_to_model_info
         )
     
+    # Table 2 : Navigation in the model
     with ui.tab_panel(tab_volet1):
         with ui.tabs().classes('w-full') as internal_tabs:
               tab_metabolites = ui.tab('Metabolites')
@@ -119,7 +121,7 @@ with ui.tab_panels(tabs, value=tab_volet0).classes('w-full'):
                         V1_Bloc4_ui.display(model)
                 button5=ui.button('Show information regarding exchange reactions', on_click=information_model_exchreaction)
   
-    # Volet 2  : Model
+    # Table 3  : Constraints, FBA and FVA
     with ui.tab_panel(tab_volet2):
         with ui.tabs().classes('w-full') as internal_tabs:
               tab_constraints = ui.tab('Original constraints')
@@ -146,7 +148,7 @@ with ui.tab_panels(tabs, value=tab_volet0).classes('w-full'):
                         ui.notify('No model loaded yet')
                         button7.enable()
                     else : 
-                        V2_Bloc2_ui.display(model)
+                        V2_Bloc2_FBA.display(model)
                 button7=ui.button('Show information regarding FBA', on_click=information_model_fba)
                 
             with ui.tab_panel(tab_fva):
@@ -157,21 +159,40 @@ with ui.tab_panels(tabs, value=tab_volet0).classes('w-full'):
                         ui.notify('No model loaded yet')
                         button8.enable()
                     else : 
-                        V2_Bloc1_FVA.display(model)
+                        V2_Bloc3_FVA.display(model)
                 button8=ui.button('Show information regarding FVA', on_click=information_model_fva)
             
 
-    #Volet 3
+    
+    # Table 3 : Analyses with spaghetti plots 
     with ui.tab_panel(tab_volet3):
-        def information_model_constraints():
-            button6.disable()
-            model=store.get('model')
-            if model is None : 
-                ui.notify('No model loaded yet')
-                button6.enable()
-            else : 
-                V3_Bloc1_ui.display(model)
-        button6=ui.button('Show information regarding analysis', on_click=information_model_constraints)
+        with ui.tabs().classes('w-full') as internal_tabs:
+              tab_analyses = ui.tab('Sensitivity to nutritional environment analyses')
+              tab_analyses_p = ui.tab('Application to the Penicillin G')
+
+    with ui.tab_panels(internal_tabs, value=tab_constraints).classes('w-full'):
+        with ui.tab_panel(tab_analyses):
+            def information_model_analyses():
+                button6.disable()
+                model=store.get('model')
+                if model is None : 
+                    ui.notify('No model loaded yet')
+                    button6.enable()
+                else : 
+                    V3_Bloc1_ui.display(model)
+            button6=ui.button('Show information regarding analysis', on_click=information_model_analyses)
+
+        
+        with ui.tab_panel(tab_analyses):
+            def information_model_analyses_p():
+                button6.disable()
+                model=store.get('model')
+                if model is None : 
+                    ui.notify('No model loaded yet')
+                    button6.enable()
+                else : 
+                    V3_Bloc2_ui.display(model)
+            button6=ui.button('Show information regarding analysis', on_click=information_model_analyses_p)
 
 
 # ---------------------------------------------------------
