@@ -1,14 +1,14 @@
 from nicegui import ui
 import pandas as pd
-import unicodedata #permet de faire une recherche sans se préoccuper des accents
+import unicodedata 
 import csv
 
 def display(model):
 
-    selected_row_df = [] #initalise la liste de gènes sélectionnés
+    selected_row_df = [] # Initializes the list of selected genes
 
     
-    #INFO GENE
+    # Information about genes
     ui.label("General information about the genes").classes("text-2xl font-bold mb-4")
 
     def gene_type_count(model):
@@ -17,7 +17,7 @@ def display(model):
 
     # Create a dictionary to store the count of genes of each type
         genes_count = {gene_type: 0 for gene_type in genes_types}
-        # création de : {'Pc': 0, 's': 0, 't': 0, 'd': 0, 'sk': 0, 'u': 0, 'p': 0}
+        # creation of : {'Pc': 0, 's': 0, 't': 0, 'd': 0, 'sk': 0, 'u': 0, 'p': 0}
         artificial_genes_count = 0
 
         for gene in model.genes:
@@ -34,7 +34,7 @@ def display(model):
 
         return genes_count, artificial_genes_count
     
-
+    # Get the SBO terms for each gene
     def collect_sbo_terms(model, sbo_terms):
         for gene in model.genes:
             sbo_info = gene.annotation.get('sbo', '').replace('SBO:', '')
@@ -54,9 +54,9 @@ def display(model):
     genes_count, artificiel_genes_count = gene_type_count(model)
     total_genes = len(model.genes)
 
-    # Informations générales
+    # General information
     with ui.column().classes("text-lg"):
-        ui.label(f"Total Genes number in the model: {total_genes}\n\n")
+        ui.label(f"Total genes number in the model: {total_genes}\n\n")
         ui.label(f"Artificial genes number: {artificiel_genes_count}\n\n")
     
 
@@ -66,21 +66,21 @@ def display(model):
         ui.label(f"SBO : 0000243 : genes, SBO : 0000291 : empty set ")
         
     
-    ui.label("   ")
+    ui.separator()
         
 
         
-    #RECHERCHES D'INFOS SUR LES GENES
+    # Seach bar for the genes
     ui.label("Search Genes").classes("text-2xl font-bold mb-4")
 
-    #MODIIFFFFFFFFF
-    def normalize(text: str) -> str:   #fonction clé pour la recherche
+    def normalize(text: str) -> str:  
+        # Checks that the input is a string.
         if not isinstance(text, str):
-            return '' #sécurité
-        return ''.join(
-            c for c in unicodedata.normalize('NFD', text) #décompose les caractères accentués , ex : é → e + ´
-            if unicodedata.category(c) != 'Mn' #supprime les accents
-        ).lower()
+            return '' # If it is not, an empty string is returned to avoid errors.
+        return ''.join( #Normalizes the text by removing accents and converting it to lowercase
+            c for c in unicodedata.normalize('NFD', text) # Decomposes accented characters , ex : é → e + ´
+            if unicodedata.category(c) != 'Mn' # Removes accents
+        ).lower() # Converts all text to lowercase
     
     data = []
 
@@ -100,22 +100,21 @@ def display(model):
             'refseq': gene.annotation.get('refseq')
         })
 
-    df = pd.DataFrame(data)
+    df = pd.DataFrame(data) # Dataframe which contains all key information about the gene
 
-    # colonne normalisée pour la recherche
-    df['name_norm'] = df['Gene ID'].apply(normalize) #colonne invisible pour la recherche partielle
+    # Normalized column for the research
+    df['name_norm'] = df['Gene ID'].apply(normalize)
 
-    # mapping affichage ↔ recherche
+    # mapping dsiplay ↔ search
     name_map = dict(zip(df['Gene ID'], df['name_norm']))
 
 
-    # ---------- UI ----------
     ui.label("Recherche de gènes").classes('text-h5') 
 
-    results = ui.column().classes('q-gutter-md') #conteneur de résultats
+    results = ui.column().classes('q-gutter-md') # Results container
 
 
-    # Affichage des gènes sélectionnés 
+    # Display of information cards for the selected genes 
     def show_genes(selected_names: list[str]):
         results.clear()
 
@@ -123,20 +122,19 @@ def display(model):
             return
  
 
-        # Vérifier que le gène existe dans le DataFrame 
+        # Verify of the presence of the gene in the DataFrame
         row_df = df[df['Gene ID'] == selected_names] 
         if row_df.empty: 
-            return # évite l'erreur iloc[0] 
+            return
         
         row = row_df.iloc[0]
 
-        selected_row_df.append(row_df) #màj de la liste de gènes sélectionnés
+        selected_row_df.append(row_df) # Update of the list of the selected genes
 
 
         with ui.row().classes('q-gutter-lg'): 
-            # ← alignement horizontal
 
-            # CARD1 : Infos générales
+            # CARD1 : General information
             with ui.card().classes('w-96'):
                 ui.label(f"{row['Gene ID']}").classes('text-h6')
                 ui.separator()
@@ -147,7 +145,7 @@ def display(model):
                 ui.label(f"SBO : {row['SBO']}")
                 ui.label(f"refseq : {row['refseq']}")
             
-            #CARD2 : Produit génique
+            #CARD2 : Gene product
             with ui.card().classes('w-96'):
                 ui.label("Gene product").classes('text-h6')
                 ui.separator()
@@ -158,7 +156,7 @@ def display(model):
                 ui.label(f"TMHMM : {row['TMHMM']}") 
                 ui.label(f"SignalP : {row['SignalP']}") 
 
-            #CARD 3 : Contexte dans le réseau métabolique
+            #CARD 3 : Context in the metabolites network
             with ui.card().classes('w-96'):
                 ui.label(" Context in the metabolic network").classes('text-h6')
                 ui.separator()
@@ -169,11 +167,11 @@ def display(model):
                         for reaction in row['Reactions']:
                             ui.label(reaction)
             
-    #export csv   
+    # Function to export results to CSV  
     def export_infos_gene_csv():
 
         if len(selected_row_df)==0: 
-            ui.notify("No Gene selected") 
+            ui.notify("No Gene selected") # Inform the user of the absence of selected gene  
             return
             
         filename = "info_gene.csv"
@@ -190,7 +188,7 @@ def display(model):
 
         ui.download(filename)
 
-    #export json
+    # Function to export results to JSON
     def export_infos_gene_json(): 
         if len(selected_rows_df)==0 : 
             ui.notify("No Gene Selected") 
@@ -199,7 +197,6 @@ def display(model):
         row_df = selected_row_df[-1] 
         row = row_df.iloc[0] 
         
-        # Construire un dictionnaire propre 
         data = { "Gene ID": row["Gene ID"], 
                 "ncbigene": row["ncbigene"], 
                 "kegg.genes": row["kegg.genes"], 
@@ -212,7 +209,6 @@ def display(model):
                 "Number of associated reactions": row["Count Reactions"], 
                 "List of associated reactions": row["Reactions"], } 
         
-        # Convertir en JSON formaté 
         json_str = pd.Series(data).to_json(indent=4, force_ascii=False) 
         filename = "info_gene.json" 
         with open(filename, "w", encoding="utf-8") as f: 
@@ -222,24 +218,28 @@ def display(model):
     
             
 
-
-    # Select avec autocomplétion avancée 
+    # Select component with advanced autocomplete
     select = ui.select(
-        options=list(name_map.keys()),
-        label='Enter gene ID',
-        multiple=False,
-        on_change=lambda e: show_genes(e.value)
+        options=list(name_map.keys()),  # List of available gene IDs (displayed options)
+        label='Enter gene ID',   
+        multiple=False, # Only one gene can be selected              
+        on_change=lambda e: show_genes(e.value) 
     ).props(
-        'use-input clearable input-debounce=300' #Attente de 300 ms avant déclenchement : meilleure performance
-    ).classes('w-96')
+        'use-input clearable input-debounce=300' # Enables typing in the field, allows clearing,
+                                                # and waits 300 ms before triggering input events
+    ).classes('w-96') 
 
-    # Recherche partielle insensible aux accents 
+    # Accent-insensitive partial search
     def filter_options(e):
-        query = normalize(e.args or "")
+        query = normalize(e.args or "")  # Normalize the user input
+
+        # If the search field is empty, show all options
         if not query:
             select.options = list(name_map.keys())
             return
 
+        # Filter gene names: keep those where the normalized query
+        # appears inside the normalized gene name
         select.options = [
             name for name, norm in name_map.items()
             if query in norm
@@ -247,6 +247,7 @@ def display(model):
 
     select.on('filter', filter_options)
 
+    # Buttons to exports results
     with ui.dropdown_button('Export Gene(s) Information', auto_close=True):
         ui.item('.CSV', on_click=export_infos_gene_csv).classes("mt-4 bg-blue-600 text-white")
         ui.item('.JSON', on_click=export_infos_gene_json).classes("mt-4 bg-blue-600 text-white")
