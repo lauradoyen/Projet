@@ -116,7 +116,17 @@ def display(model):
             ui.label().bind_text_from(fraction_optimum, 'value')
 
         with ui.column().classes("bg-gray-100 p-4 rounded-lg shadow-md w-96"):
-            fva_grid = ui.aggrid({'columnDefs': [],'rowData': []}).style('height:200px')
+            fva_grid = ui.aggrid(
+        {
+            "columnDefs": [],
+            "rowData": [] ,
+            "defaultColDef": {"sortable": True, "filter": True, "resizable": True},
+            "pagination": True,
+            "paginationPageSize": 20,
+            "stopEditingWhenCellsLoseFocus": True,
+        },
+        theme="balham",
+    ).classes("w-full h-96")
             
             def clear_grid():
                 fva_grid.options['rowData'] = []
@@ -170,9 +180,10 @@ def display(model):
         
 
         with ui.column().classes("bg-gray-100 p-4 rounded-lg shadow-md w-96"):
-
             ui.label("Find the reversible reactions and reactions with a fixed flux").classes("text-xl font-semibold mb-2")
             ui.label('The reversible reactions and reactions with a fixed flux will be calculated using the current results shown for the FVA')
+            with ui.card():
+                number_reaction=ui.label("")
             zone = ui.aggrid(
     {
         "columnDefs": [
@@ -193,6 +204,7 @@ def display(model):
                 zone.options['rowData'] =flux_reaction
                 zone.update()
                 ui.notify("the results of the fixed flux reactions are available ")
+                number_reaction.set_text(f"There are {len(flux_reaction)} fixed flux reactions")
             ui.button('Show fixed flux reactions',on_click=find_fixed_reactions)
             async def find_reversible_reactions():
                 if fva_grid.options['rowData'] == []:
@@ -206,6 +218,7 @@ def display(model):
                 zone.options['rowData'] =reversible_reaction
                 zone.update()
                 ui.notify("The reversible reactions are available")
+                number_reaction.set_text(f"There are {len(reversible_reaction)} reversible reactions")
             ui.button('Show reversible reactions', on_click=find_reversible_reactions)
             async def show_blocked_status():
                 if fva_grid.options['rowData'] == []:
@@ -217,6 +230,7 @@ def display(model):
                 zone.options['rowData'] =blocked_reaction
                 zone.update()
                 ui.notify("The blocked reactions are available")
+                number_reaction.set_text(f"There are {len(blocked_reaction)} blocked reactions")
             ui.button("show blocked reactions", on_click=show_blocked_status).classes("mt-4 bg-blue-600 text-white")
             async def show_active_status():
                 if fva_grid.options['rowData'] == []:
@@ -224,10 +238,11 @@ def display(model):
                     return
                 zone.clear()
                 active_reaction = [{
-                "Reaction": r} for r in df_fva.loc[df_fva["minimum"] != df_fva["maximum"], "index"]]
+                "Reaction": r} for r in df_fva.loc[(df_fva["minimum"] != df_fva["maximum"]) | ((df_fva["minimum"] !=0) & (df_fva["minimum"]==df_fva["maximum"])  ), "index"]]
                 zone.options['rowData'] =active_reaction
                 zone.update()
                 ui.notify("The active reactions are available")
+                number_reaction.set_text(f"There are {len(active_reaction)} active reactions")
             ui.button("show active reactions",on_click=show_active_status).classes("mt-4 bg-blue-600 text-white")
 
         

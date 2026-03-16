@@ -2,7 +2,6 @@ from nicegui import ui
 import cobra
 from model_utils import load_model
 import os
-#print("VERSION NICEGUI =", nicegui._version_) 
 
 import V1_Bloc1_ui
 import V1_Bloc2_ui_Genes
@@ -15,7 +14,7 @@ import V2_Bloc1_FVA
 import V3_Bloc1_ui
 import tempfile
 
-store = {'model': None}
+store = {'model': None} # 
 
 async def uploads(e):
     file = e.file        # premier fichier
