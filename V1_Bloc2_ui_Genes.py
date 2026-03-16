@@ -178,10 +178,8 @@ def display(model):
         with open(filename, "w", newline="", encoding="utf-8") as file:
             writer = csv.writer(file)
 
-            # En‑têtes
             writer.writerow(["Gene ID", "ncbigene", "kegg.genes", "SBO", "refseq", "ncbiprotein", "uniprot", "DeepLoc", "TMHMM", "SignalP", "Number of associated reactions", "List of associated reactions" ])
 
-            # Infos
             for row_df in selected_row_df:
                 row = row_df.iloc[0]
                 writer.writerow([row["Gene ID"], row["ncbigene"], row["kegg.genes"], row ["SBO"], row ["refseq"], row ["ncbiprotein"], row ["uniprot"], row ["DeepLoc"], row ["TMHMM"],  row ["SignalP"], row ["Count Reactions"], row ["Reactions"]])
