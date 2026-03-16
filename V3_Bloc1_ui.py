@@ -11,7 +11,6 @@ import threading
 
 from src.report_utils import *
 from src.Sensitivity_to_nutritional_environment import *
-from src.Sensitivity_to_variation_reactant import *
 
 import gurobipy as gp
 cobra.Configuration().solver = "gurobi"

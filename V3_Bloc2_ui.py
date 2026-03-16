@@ -11,13 +11,14 @@ import threading
 
 from src.report_utils import *
 from src.Sensitivity_to_nutritional_environment import *
-from src.Sensitivity_to_variation_reactant import *
 
 import gurobipy as gp
 cobra.Configuration().solver = "gurobi"
 
 
 def display(model):
+
+    ui.label(f"This section focuses only on the genome-scale metabolic network of Penicillium rubens").classes("text-xl font-bold")
 
     def is_exchange_reaction(rxn):
     # Une réaction d’échange a un seul métabolite
@@ -51,7 +52,7 @@ def display(model):
 
     
     with ui.row().classes("gap-4"):
-        # -------- Colonne droite : FBA --------
+        # -------- Colonne gauche --------
         with ui.column().classes("bg-gray-100 p-4 rounded-lg shadow-md w-270"):
 
             ui.label("Sensitivity analysis for the production of Penicillin G").classes("text-x3 font-bold")
@@ -207,7 +208,7 @@ def display(model):
                     plots_multi_container = ui.column()
     
 
-        # -------- Colonne gauche : contraintes --------
+        # -------- Colonne gauche --------
         with ui.column().classes("bg-gray-100 p-4 rounded-lg shadow-md w-130"):
 
             ui.label("Uptake ID ⭤  Associated metabolite").classes("text-xl font-bold mt-6")
