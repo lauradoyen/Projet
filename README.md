@@ -27,7 +27,7 @@ $ source Nicegui_project/bin/activate
 $ pip install -r requirements.txt 
 $ python nicegui_main.py
 ```
-Please install gurobi to see be able to see the spaghetti plots. 
+Please install gurobi to visualise the spaghetti plots. 
 
 ## USING THE APP
 
