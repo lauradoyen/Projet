@@ -4,8 +4,8 @@ from nicegui import ui
 
 def load_model():
 
-    iPrub22_path = "iPrub22.sbml"
-    model = cobra.io.read_sbml_model(iPrub22_path)
+    model_path = "iPrub22.sbml"
+    model = cobra.io.read_sbml_model(model_path)
     return model
 
 
