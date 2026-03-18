@@ -24,7 +24,7 @@ $ git clone https://github.com/lauradoyen/Projet.git Project
 $ cd Project
 $ python3 -m venv Nicegui_project
 $ source Nicegui_project/bin/activate 
-$ pip install -r new_requirements.txt 
+$ pip install -r requirements.txt 
 $ python nicegui_main.py
 ```
 
