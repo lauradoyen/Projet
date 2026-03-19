@@ -255,4 +255,37 @@ def display(model):
         ui.item('.JSON', on_click=export_infos_reaction_json).classes("mt-4 bg-blue-600 text-white")
 
 
+def get_reaction_type(model, reaction_id):
+    """Retourne le type de réaction (sink, transport, demand, sk, uptake, production)"""
+
+    reaction = model.reactions.get_by_id(reaction_id)
+
+    # Concatène les IDs des gènes associés
+    gene_id = "".join([g.id.replace("gp_", "") for g in reaction.genes]).lower()
+
+    # Dictionnaire de correspondance
+    mapping = {
+        "s": "sink",
+        "t": "transport",
+        "d": "demand",
+        "sk": "sk",
+        "u": "uptake",
+        "p": "production",
+    }
+
+    # On teste d'abord les types longs (sk)
+    if "sk" in gene_id:
+        return "sk"
+
+    # Puis les types simples
+    for key, label in mapping.items():
+        if key in gene_id:
+            return label
+
+    return ""
+
+
+
+
+
 
