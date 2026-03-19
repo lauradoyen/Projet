@@ -99,13 +99,13 @@ def display(model):
         # Sélection de l’objectif
         with ui.column().classes("bg-gray-100 p-4 rounded-lg shadow-md w-96"):
 
-            default_objective=model.objective.expression.args[0].id #store the default objective function of the model 
+            #default_objective=model.objective.expression.args[0].id #store the default objective function of the model 
 
             ui.label("Select the different parameters of the FVA ").classes("text-xl font-semibold mb-2")
 
             reactions = [r.id for r in model.reactions]
             
-            select_objective = ui.select(options=reactions,value=default_objective,with_input=True,label='Select the objective reaction').classes('w-64').props('use-chips') #select the objective function of the model. Value allows you to see the default function that is used (here the default objective function fo the model)
+            select_objective = ui.select(options=reactions,with_input=True,label='Select the objective reaction').classes('w-64').props('use-chips') #select the objective function of the model. 
 
             metabolite_select = ui.select(options=reactions, #reactions whose FVA fluxes you want 
                 multiple = True, 
@@ -138,7 +138,7 @@ def display(model):
             df_fva = None 
 
             # Function FVA 
-            
+
             async def run_fva(): #use of asyncio so that the FVA runs asynchrononously since it can take a lot of time 
                 nonlocal objective_reaction #modify objective_reaction, function defined outside of run_fva
                 nonlocal df_fva
