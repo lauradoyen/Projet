@@ -169,6 +169,7 @@ def display(model):
             
     # Function to export results to CSV  
     def export_infos_gene_csv():
+        nonlocal selected_row_df
 
         if len(selected_row_df)==0: 
             ui.notify("No Gene selected") # Inform the user of the absence of selected gene  
@@ -188,7 +189,7 @@ def display(model):
 
     # Function to export results to JSON
     def export_infos_gene_json(): 
-        if len(selected_rows_df)==0 : 
+        if len(selected_row_df)==0 : 
             ui.notify("No Gene Selected") 
             return 
         
