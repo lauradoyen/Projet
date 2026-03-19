@@ -105,7 +105,7 @@ def display(model):
 
             reactions = [r.id for r in model.reactions]
             
-            select_objective = ui.select(options=reactions,with_input=True,label='Select the objective reaction').classes('w-64').props('use-chips') #select the objective function of the model. 
+            select_objective = ui.select(options=reactions,with_input=True,label='Select the objective reaction', value="Biomass_rxn" if "Biomass_rxn" in reactions else reactions[0]).classes('w-64').props('use-chips') #select the objective function of the model. 
 
             metabolite_select = ui.select(options=reactions, #reactions whose FVA fluxes you want 
                 multiple = True, 

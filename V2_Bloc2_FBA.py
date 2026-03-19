@@ -10,8 +10,8 @@ def display(model):
     def extract_all_constraints(model):
         rows = []
         for r in model.reactions:
-            lb = None if r.lower_bound in (-1000, 0) else r.lower_bound #no trivial lower bound 
-            ub = None if r.upper_bound in (1000, 0) else r.upper_bound #no trivial upper bound
+            lb = 1000 if r.lower_bound > 1000 else r.lower_bound #no trivial lower bound 
+            ub = -1000 if r.upper_bound < -1000 else r.upper_bound #no trivial upper bound
             rows.append({"Reaction": r.id, "Lower bound": lb or "", "Upper bound": ub or ""})
         return pd.DataFrame(rows)
 
@@ -21,18 +21,14 @@ def display(model):
     def apply_constraints(df):
         for _, row in df.iterrows():
             r = model.reactions.get_by_id(row["Reaction"])
-            try: r.lower_bound = float(row["Lower bound"])
-            except: r.lower_bound = -1000
-            try: r.upper_bound = float(row["Upper bound"])
-            except: r.upper_bound = 1000
+            r.lower_bound = float(row["Lower bound"])
+            r.upper_bound = float(row["Upper bound"])
 
     def on_grid_edit(e):
         row = e.args["data"]
         r = model.reactions.get_by_id(row["Reaction"])
-        try: r.lower_bound = float(row["Lower bound"])
-        except: r.lower_bound = -1000
-        try: r.upper_bound = float(row["Upper bound"])
-        except: r.upper_bound = 1000
+        r.lower_bound = float(row["Lower bound"])
+        r.upper_bound = float(row["Upper bound"])
 
     # Function to export constraints to CSV
     def export_constraints():
