@@ -43,12 +43,6 @@ def display(model):
     def get_constraints(model):
         return [{"Reaction": r.id, "Lower bound": r.lower_bound, "Upper bound": r.upper_bound} for r in model.reactions]
     
-
-    """Extraction of the constraints"""
-    original_model=model.copy() #save informations to restore contraints and keep in mind the objective function of the original model 
-    def get_constraints(model):
-        return [{"Reaction": r.id, "Lower bound": r.lower_bound, "Upper bound": r.upper_bound} for r in model.reactions]
-    
     # Title of the page
     ui.label("Model constraints and FBA").classes("text-xl font-bold mb-2")
 
@@ -77,14 +71,7 @@ def display(model):
                 grid.options["rowData"] = df.to_dict("records") 
                 grid.update() # updates the constraints that the user sees on the interface
                 model=original_model.copy()
-            def reset_constraints(): 
-                nonlocal df #allows you to modify variables defined outside of the function 
-                nonlocal model_copy 
-                df = extract_all_constraints(original_model) #reset the constraints with original_model
-                grid.options["rowData"] = df.to_dict("records") 
-                grid.update() # updates the constraints that the user sees on the interface
-                model_copy=original_model.copy()
-                ui.notify("Constraints restored from original model", color="green")
+                ui.notify("COnstraints restored from original model",color="green")
 
             # Buttons to filter and reset constraints
             with ui.row().classes("gap-2 mb-2"):
