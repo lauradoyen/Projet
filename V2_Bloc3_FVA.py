@@ -10,9 +10,7 @@ def display(model):
 
     original_model=model.copy() #save informations to restore contraints and keep in mind the objective function of the original model 
     model_copy=model.copy()
-    
-    
-    
+
     def get_constraints(model):
         return [{"Reaction": r.id, "Lower bound": r.lower_bound, "Upper bound": r.upper_bound} for r in model.reactions]
 
@@ -42,10 +40,29 @@ def display(model):
             
             df = extract_all_constraints(model_copy) #constraints that will be shown in the constraint_grid
 
-            def on_grid_edit(e): #allows you to modify in the table the constraints of the model 
+            def on_grid_edit(e):
                 row = e.args["data"]
                 rxn_id = row["Reaction"]
                 r = model_copy.reactions.get_by_id(rxn_id)
+                old_lb = r.lower_bound
+                old_ub = r.upper_bound
+                try:
+                    new_lb = float(row["Lower bound"])
+                    new_ub = float(row["Upper bound"])
+                except:
+                    ui.notify("Invalid number", color="red")
+                    row["Lower bound"] = old_lb
+                    row["Upper bound"] = old_ub
+                    constraint_grid.update()
+                    return
+                if new_lb > new_ub:
+                    ui.notify("Lower bound cannot be greater than upper bound", color="red")
+                    row["Lower bound"] = old_lb
+                    row["Upper bound"] = old_ub
+                    constraint_grid.update()
+                    return
+                r.lower_bound = new_lb
+                r.upper_bound = new_ub
 
                 # LB
                 lb = row["Lower bound"]

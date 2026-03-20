@@ -21,9 +21,27 @@ def display(model):
     # Functions to apply constraints modifications from the grid to the model
     def on_grid_edit(e):
         row = e.args["data"]
-        r = model_copy.reactions.get_by_id(row["Reaction"])
-        r.lower_bound = float(row["Lower bound"])
-        r.upper_bound = float(row["Upper bound"])
+        rxn_id = row["Reaction"]
+        r = model_copy.reactions.get_by_id(rxn_id)
+        old_lb = r.lower_bound
+        old_ub = r.upper_bound
+        try:
+            new_lb = float(row["Lower bound"])
+            new_ub = float(row["Upper bound"])
+        except:
+            ui.notify("Invalid number", color="red")
+            row["Lower bound"] = old_lb
+            row["Upper bound"] = old_ub
+            grid.update()
+            return
+        if new_lb > new_ub:
+            ui.notify("Lower bound cannot be greater than upper bound", color="red")
+            row["Lower bound"] = old_lb
+            row["Upper bound"] = old_ub
+            grid.update()
+            return
+        r.lower_bound = new_lb
+        r.upper_bound = new_ub
 
     # Function to export constraints to CSV      
     def export_constraints():
