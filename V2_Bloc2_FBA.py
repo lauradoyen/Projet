@@ -32,7 +32,11 @@ def display(model):
     def export_constraints():
         filename = "constraints.csv"
         fieldnames = ["Reaction", "Lower bound", "Upper bound"]
+<<<<<<< HEAD
         rows = get_constraints(model_copy)
+=======
+        rows = get_constraints(model)
+>>>>>>> 5199f89950600fefe31b8078032cc200f60dc76b
 
         with open(filename, "w", newline="", encoding="utf-8") as file:
             writer = csv.DictWriter(file, fieldnames=fieldnames)
@@ -70,11 +74,19 @@ def display(model):
             # Reset constraints to original model values
             def reset_constraints(): 
                 nonlocal df #allows you to modify variables defined outside of the function 
+<<<<<<< HEAD
                 nonlocal model_copy 
                 df = extract_all_constraints(original_model) #reset the constraints with original_model
                 grid.options["rowData"] = df.to_dict("records") 
                 grid.update() # updates the constraints that the user sees on the interface
                 model_copy=original_model.copy()
+=======
+                nonlocal model 
+                df = extract_all_constraints(original_model) #reset the constraints with original_model
+                grid.options["rowData"] = df.to_dict("records") 
+                grid.update() # updates the constraints that the user sees on the interface
+                model=original_model.copy()
+>>>>>>> 5199f89950600fefe31b8078032cc200f60dc76b
                 ui.notify("Constraints restored from original model", color="green")
 
             # Buttons to filter and reset constraints
