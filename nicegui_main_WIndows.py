@@ -16,8 +16,7 @@ import V3_Bloc2_ui
 import tempfile
 
 model = load_model()
-store = {'model': model} 
-
+store = {'model': model} #
 with ui.tabs().classes('w-full') as tabs:
     tab_volet0 = ui.tab("Reconstruction ID card")
     tab_volet1 = ui.tab("Navigation")
@@ -28,25 +27,12 @@ with ui.tab_panels(tabs, value=tab_volet0).classes('w-full'):
 
     # Home table : upload the model and display general information about it
     with ui.tab_panel(tab_volet0):
-        V1_Bloc1_ui.display(model)    
-        display_container = ui.column()
-        def go_to_model_info():
-            button1.disable() #hide the button so that if you impatiently click on it twice, the information is still shown only once
-            model=store.get('model')
-            if model is None:
-                ui.notify('No model loaded yet')
-                button1.enable() #the button is clickable again if the model couldn't be uploaded 
-            else : 
-                button1.disable()
-                
-
-        button1=ui.button(
-                'Show information regarding the model',
-                on_click=go_to_model_info
-        )
-    
-    # Table 2 : Navigation in the model
-    with ui.tab_panel(tab_volet1):
+        if model is not None:
+            V1_Bloc1_ui.display(model)
+        else:
+            ui.notify("No model loaded yet. Please choose a model to see its information.", color="red")
+   
+    with ui.tab_panel(tab_volet1): # Tab to explore the metabolites, reactions, genes, exchange reactions of the model
         with ui.tabs().classes('w-full') as internal_tabs:
               tab_metabolites = ui.tab('Metabolites')
               tab_reactions = ui.tab('Reactions')
@@ -98,7 +84,7 @@ with ui.tab_panels(tabs, value=tab_volet0).classes('w-full'):
                         V1_Bloc4_ui.display(model)
                 button5=ui.button('Show information regarding exchange reactions', on_click=information_model_exchreaction)
   
-    # Table 3  : Constraints, FBA and FVA
+    # Volet 2  : Model
     with ui.tab_panel(tab_volet2):
         with ui.tabs().classes('w-full') as internal_tabs:
               tab_constraints = ui.tab('Original constraints')
@@ -140,40 +126,38 @@ with ui.tab_panels(tabs, value=tab_volet0).classes('w-full'):
                 button8=ui.button('Show information regarding FVA', on_click=information_model_fva)
             
 
-    
-    # Table 3 : Analyses with spaghetti plots 
+    #Volet 3
+              
     with ui.tab_panel(tab_volet3):
         with ui.tabs().classes('w-full') as internal_tabs:
-              tab_analyses = ui.tab('Sensitivity to nutritional environment analyses')
-              tab_analyses_p = ui.tab('Application to the Penicillin G')
-
-    with ui.tab_panels(internal_tabs, value=tab_constraints).classes('w-full'):
-        with ui.tab_panel(tab_analyses):
-            def information_model_analyses():
-                button6.disable()
-                model=store.get('model')
-                if model is None : 
-                    ui.notify('No model loaded yet')
-                    button6.enable()
-                else : 
-                    V3_Bloc1_ui.display(model)
-            button6=ui.button('Show information regarding analysis', on_click=information_model_analyses)
-
+              tab_sensitivity_analysis_nutritional = ui.tab('Sensitivity to nutritional environment analysis')
+              tab_sensitivity_analysis_nutritional_p = ui.tab('Sensitivity to nutritional environment analysis for the production of Penicillin')
         
-        with ui.tab_panel(tab_analyses):
-            def information_model_analyses_p():
-                button6.disable()
-                model=store.get('model')
-                if model is None : 
-                    ui.notify('No model loaded yet')
-                    button6.enable()
-                else : 
-                    V3_Bloc2_ui.display(model)
-            button6=ui.button('Show information regarding analysis', on_click=information_model_analyses_p)
+        with ui.tab_panels(internal_tabs, value=tab_sensitivity_analysis_nutritional).classes('w-full'):
+            with ui.tab_panel(tab_sensitivity_analysis_nutritional):
+                def information_sensitivity():
+                    button9.disable()
+                    model=store.get('model')
+                    if model is None : 
+                        ui.notify('No model loaded yet')
+                        button9.enable()
+                    else : 
+                        V3_Bloc1_ui.display(model)
+                button9=ui.button('Show information regarding spaghetti plots',on_click=information_sensitivity)
+            with ui.tab_panel(tab_sensitivity_analysis_nutritional_p):
+                def information_sensitivity_p():
+                    button10.disable()
+                    model=store.get('model')
+                    if model is None : 
+                        ui.notify('No model loaded yet')
+                        button10.enable()
+                    else : 
+                        V3_Bloc2_ui.display(model)
+                button10=ui.button('Show information regarding spaghetti plots',on_click=information_sensitivity_p)
 
 
 # ---------------------------------------------------------
 # RUN
 # ---------------------------------------------------------
 
-ui.run(port=8081, reload=False) 
+ui.run(port=8081, reload=False) #the port used to run the program is the 8081
