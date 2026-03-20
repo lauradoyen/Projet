@@ -10,9 +10,9 @@ def display(model):
     def extract_all_constraints(model):
         rows = []
         for r in model.reactions:
-            lb = 1000 if r.lower_bound > 1000 else r.lower_bound #no trivial lower bound 
-            ub = -1000 if r.upper_bound < -1000 else r.upper_bound #no trivial upper bound
-            rows.append({"Reaction": r.id, "Lower bound": lb or "", "Upper bound": ub or ""})
+            lb = r.lower_bound 
+            ub = r.upper_bound 
+            rows.append({"Reaction": r.id, "Lower bound": lb or 0, "Upper bound": ub or 0})
         return pd.DataFrame(rows)
 
     df = extract_all_constraints(model)
@@ -30,13 +30,20 @@ def display(model):
         r.lower_bound = float(row["Lower bound"])
         r.upper_bound = float(row["Upper bound"])
 
-    # Function to export constraints to CSV
+    # Function to export constraints to CSV   
+    def get_constraints(model):
+        return [{"Reaction": r.id, "Lower bound": r.lower_bound, "Upper bound": r.upper_bound} for r in model.reactions]
+    
     def export_constraints():
         filename = "constraints.csv"
+        fieldnames = ["Reaction", "Lower bound", "Upper bound"]
+        rows = get_constraints(model)
+
         with open(filename, "w", newline="", encoding="utf-8") as file:
-            writer = csv.DictWriter(file, fieldnames=["Reaction","Lower bound","Upper bound"])
+            writer = csv.DictWriter(file, fieldnames=fieldnames)
             writer.writeheader()
-            writer.writerows(df.to_dict("records"))
+            writer.writerows(rows)
+
         ui.download(filename)
 
     # Title of the page
