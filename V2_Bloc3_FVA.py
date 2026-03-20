@@ -8,17 +8,18 @@ import asyncio
 
 def display(model):
 
-    """Extraction des contraintes"""
     original_model=model.copy() #save informations to restore contraints and keep in mind the objective function of the original model 
     model_copy=model.copy()
+    
+    
+    
     def get_constraints(model):
         return [{"Reaction": r.id, "Lower bound": r.lower_bound, "Upper bound": r.upper_bound} for r in model.reactions]
 
-    """Fonction d’export CSV"""
     def export_constraints():
         filename = "constraints.csv"
         fieldnames = ["Reaction", "Lower bound", "Upper bound"]
-        rows = get_constraints(model)
+        rows = get_constraints(model_copy)
 
         with open(filename, "w", newline="", encoding="utf-8") as file:
             writer = csv.DictWriter(file, fieldnames=fieldnames)
@@ -27,29 +28,24 @@ def display(model):
 
         ui.download(filename)
 
-
     # Interface 
     with ui.row().classes("gap-6"): #the 2nd block is right next to the 1rst one and not below it  
         with ui.column().classes("bg-gray-100 p-4 rounded-lg shadow-md w-96"): #create boxes where you can write text 
             ui.label("Modify the different constraints of the model").classes("text-xl font-semibold mb-2")
-            def extract_all_constraints(model): # extract the constraints of the model and changes the values to display 
+            def extract_all_constraints(model):
                 rows = []
                 for r in model.reactions:
-                    lb = None if r.lower_bound in (-1000, 0) else r.lower_bound #we treat +/- 1000 as an infinity bound
-                    ub = None if r.upper_bound in (1000, 0) else r.upper_bound
-                    rows.append({
-                "Reaction": r.id,
-                "Lower bound": lb if lb is not None else "",
-                "Upper bound": ub if ub is not None else "",
-            })
+                    lb = 0 if r.lower_bound is None else r.lower_bound 
+                    ub = 0 if r.upper_bound is None else r.upper_bound
+                    rows.append({"Reaction": r.id, "Lower bound": lb, "Upper bound": ub})
                 return pd.DataFrame(rows)
             
-            df = extract_all_constraints(model) #constraints that will be shown in the constraint_grid
+            df = extract_all_constraints(model_copy) #constraints that will be shown in the constraint_grid
 
             def on_grid_edit(e): #allows you to modify in the table the constraints of the model 
                 row = e.args["data"]
                 rxn_id = row["Reaction"]
-                r = model.reactions.get_by_id(rxn_id)
+                r = model_copy.reactions.get_by_id(rxn_id)
 
                 # LB
                 lb = row["Lower bound"]
@@ -85,7 +81,7 @@ def display(model):
             
             def reset_constraints(): 
                 nonlocal df #allows you to modify variables defined outside of the function 
-                nonlocal model
+                nonlocal model_copy
                 df = extract_all_constraints(original_model) #reset the constraints with original_model
                 constraint_grid.options["rowData"] = df.to_dict("records") 
                 constraint_grid.update() # udates the constraints that the user sees on the interface
@@ -103,7 +99,7 @@ def display(model):
 
             ui.label("Select the different parameters of the FVA ").classes("text-xl font-semibold mb-2")
 
-            reactions = [r.id for r in model.reactions]
+            reactions = [r.id for r in model_copy.reactions]
             
             select_objective = ui.select(options=reactions,with_input=True,label='Select the objective reaction', value="Biomass_rxn" if "Biomass_rxn" in reactions else reactions[0]).classes('w-64').props('use-chips') #select the objective function of the model. 
 
@@ -146,7 +142,6 @@ def display(model):
                 ui.notify('Please wait for the calculations to be finished')
                 try:
                     clear_grid()
-                    model_copy=model.copy()
                     objective_reaction=model_copy.reactions.get_by_id(select_objective.value)
                     model_copy.objective =objective_reaction.flux_expression
                     if len(metabolite_select.value)==0: #if no reactions have been selected, we show the results of the FVA for all the reactions of the model, else only those selected 

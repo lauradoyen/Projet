@@ -1,7 +1,7 @@
 from nicegui import ui
 import pandas as pd
 import csv
-import V2_Bloc1_ui as Bloc1
+import V2_Bloc1_ui as Bloc1 
 import V1_Bloc2_ui_Reactions as ReacInfo
 
 def display(model):
@@ -10,35 +10,42 @@ def display(model):
     def extract_all_constraints(model):
         rows = []
         for r in model.reactions:
-            lb = 1000 if r.lower_bound > 1000 else r.lower_bound #no trivial lower bound 
-            ub = -1000 if r.upper_bound < -1000 else r.upper_bound #no trivial upper bound
-            rows.append({"Reaction": r.id, "Lower bound": lb or "", "Upper bound": ub or ""})
+            lb = 0 if r.lower_bound is None else r.lower_bound 
+            ub = 0 if r.upper_bound is None else r.upper_bound
+            rows.append({"Reaction": r.id, "Lower bound": lb, "Upper bound": ub})
         return pd.DataFrame(rows)
 
-    df = extract_all_constraints(model)
+    model_copy=model.copy()
+    df = extract_all_constraints(model_copy)
 
     # Functions to apply constraints modifications from the grid to the model
-    def apply_constraints(df):
-        for _, row in df.iterrows():
-            r = model.reactions.get_by_id(row["Reaction"])
-            r.lower_bound = float(row["Lower bound"])
-            r.upper_bound = float(row["Upper bound"])
-
     def on_grid_edit(e):
         row = e.args["data"]
-        r = model.reactions.get_by_id(row["Reaction"])
+        r = model_copy.reactions.get_by_id(row["Reaction"])
         r.lower_bound = float(row["Lower bound"])
         r.upper_bound = float(row["Upper bound"])
 
-    # Function to export constraints to CSV
+    # Function to export constraints to CSV   
+    def get_constraints(model):
+        return [{"Reaction": r.id, "Lower bound": r.lower_bound, "Upper bound": r.upper_bound} for r in model.reactions]
+    
     def export_constraints():
         filename = "constraints.csv"
+        fieldnames = ["Reaction", "Lower bound", "Upper bound"]
+        rows = get_constraints(model_copy)
+
         with open(filename, "w", newline="", encoding="utf-8") as file:
-            writer = csv.DictWriter(file, fieldnames=["Reaction","Lower bound","Upper bound"])
+            writer = csv.DictWriter(file, fieldnames=fieldnames)
             writer.writeheader()
-            writer.writerows(df.to_dict("records"))
+            writer.writerows(rows)
+
         ui.download(filename)
 
+    """Extraction of the constraints"""
+    original_model=model.copy() #save informations to restore contraints and keep in mind the objective function of the original model 
+    def get_constraints(model):
+        return [{"Reaction": r.id, "Lower bound": r.lower_bound, "Upper bound": r.upper_bound} for r in model.reactions]
+    
     # Title of the page
     ui.label("Model constraints and FBA").classes("text-xl font-bold mb-2")
 
@@ -46,7 +53,7 @@ def display(model):
 
         # Left column : constraints table
         with ui.column().classes("bg-gray-100 p-4 rounded-lg shadow-md w-96"):
-            ui.label("Constraints table").classes("text-lg font-bold mb-2")
+            ui.label("Constraints table (Please modify the max bound before the min one)").classes("text-lg font-bold mb-2")
 
             # Filter to show only uptake reactions (assuming they contain "uptake" in their ID or name)
             def filter_uptake():
@@ -59,17 +66,15 @@ def display(model):
                 grid.options["rowData"] = df.to_dict("records")
                 grid.update()
 
+            
             # Reset constraints to original model values
-            def reset_constraints():
-                nonlocal df
-                df = extract_all_constraints(model)
-                for row in Bloc1.rows_constraints:
-                    rxn = row["Reaction"]
-                    df.loc[df["Reaction"]==rxn, "Lower bound"] = row["Lower bound"]
-                    df.loc[df["Reaction"]==rxn, "Upper bound"] = row["Upper bound"]
-                apply_constraints(df)
-                grid.options["rowData"] = df.to_dict("records")
-                grid.update()
+            def reset_constraints(): 
+                nonlocal df #allows you to modify variables defined outside of the function 
+                nonlocal model_copy 
+                df = extract_all_constraints(original_model) #reset the constraints with original_model
+                grid.options["rowData"] = df.to_dict("records") 
+                grid.update() # updates the constraints that the user sees on the interface
+                model_copy=original_model.copy()
                 ui.notify("Constraints restored from original model", color="green")
 
             # Buttons to filter and reset constraints
@@ -92,11 +97,12 @@ def display(model):
             grid.on("cellValueChanged", on_grid_edit)
             ui.button("Export constraints to CSV", on_click=export_constraints).classes("mt-2 bg-green-600 text-white")
 
+
         # Right column : FBA results and objective selection
         with ui.column().classes("bg-gray-100 p-4 rounded-lg shadow-md w-96"):
 
             ui.label("FBA objective selection").classes("text-lg font-bold mb-2")
-            reactions = [r.id for r in model.reactions]
+            reactions = [r.id for r in model_copy.reactions]
             objective_select = ui.select(
                 options=reactions,
                 value="Biomass_rxn" if "Biomass_rxn" in reactions else reactions[0],
@@ -128,19 +134,20 @@ def display(model):
             def run_fba(mode):
                 nonlocal last_fluxes, last_objective_value
                 nonlocal objective_label
+                nonlocal model_copy 
                 clear_grid()
-                rxn = model.reactions.get_by_id(objective_select.value)
-                model.objective = rxn.flux_expression
+                rxn = model_copy.reactions.get_by_id(objective_select.value)
+                model_copy.objective = rxn.flux_expression
                 sense = "maximize" if mode=="max" else "minimize"
-                solution = model.optimize(objective_sense=sense)
+                solution = model_copy.optimize(objective_sense=sense)
                 if solution.status != 'optimal':
                     ui.notify(f"FBA failed: {solution.status}", color="red")
                     return
                 last_objective_value = solution.objective_value
                 last_fluxes = pd.DataFrame({
-                    "Reaction":[r.id for r in model.reactions if abs(solution.fluxes[r.id])>1e-12],
-                    "Flux":[solution.fluxes[r.id] for r in model.reactions if abs(solution.fluxes[r.id])>1e-12],
-                    "Type":[ReacInfo.get_reaction_type(model,r.id) for r in model.reactions if abs(solution.fluxes[r.id])>1e-12]
+                    "Reaction":[r.id for r in model_copy.reactions if abs(solution.fluxes[r.id])>1e-12],
+                    "Flux":[solution.fluxes[r.id] for r in model_copy.reactions if abs(solution.fluxes[r.id])>1e-12],
+                    "Type":[ReacInfo.get_reaction_type(model_copy,r.id) for r in model_copy.reactions if abs(solution.fluxes[r.id])>1e-12]
                 })
                 objective_label.text = f"Objective value: {last_objective_value:.4f}"
                 if not last_fluxes.empty:
@@ -167,4 +174,4 @@ def display(model):
             # Buttons to run FBA and export results
             ui.button("Run FBA (maximize)", on_click=lambda: run_fba("max")).classes("bg-blue-600 text-white")
             ui.button("Run FBA (minimize)", on_click=lambda: run_fba("min")).classes("bg-purple-600 text-white")
-            ui.button("Export FBA to CSV", on_click=export_fba).classes("bg-green-600 text-white") 
+            ui.button("Export FBA to CSV", on_click=export_fba).classes("bg-green-600 text-white")
