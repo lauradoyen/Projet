@@ -13,6 +13,9 @@ def display(model):
             lb = 0 if r.lower_bound is None else r.lower_bound 
             ub = 0 if r.upper_bound is None else r.upper_bound
             rows.append({"Reaction": r.id, "Lower bound": lb, "Upper bound": ub})
+            lb = 0 if r.lower_bound is None else r.lower_bound 
+            ub = 0 if r.upper_bound is None else r.upper_bound
+            rows.append({"Reaction": r.id, "Lower bound": lb, "Upper bound": ub})
         return pd.DataFrame(rows)
 
     model_copy=model.copy()
@@ -29,21 +32,30 @@ def display(model):
     def get_constraints(model):
         return [{"Reaction": r.id, "Lower bound": r.lower_bound, "Upper bound": r.upper_bound} for r in model.reactions]
     
+    # Function to export constraints to CSV   
+    def get_constraints(model):
+        return [{"Reaction": r.id, "Lower bound": r.lower_bound, "Upper bound": r.upper_bound} for r in model.reactions]
+    
     def export_constraints():
         filename = "constraints.csv"
         fieldnames = ["Reaction", "Lower bound", "Upper bound"]
-<<<<<<< HEAD
         rows = get_constraints(model_copy)
-=======
-        rows = get_constraints(model)
->>>>>>> 5199f89950600fefe31b8078032cc200f60dc76b
 
         with open(filename, "w", newline="", encoding="utf-8") as file:
+            writer = csv.DictWriter(file, fieldnames=fieldnames)
             writer = csv.DictWriter(file, fieldnames=fieldnames)
             writer.writeheader()
             writer.writerows(rows)
 
+            writer.writerows(rows)
+
         ui.download(filename)
+
+    """Extraction of the constraints"""
+    original_model=model.copy() #save informations to restore contraints and keep in mind the objective function of the original model 
+    def get_constraints(model):
+        return [{"Reaction": r.id, "Lower bound": r.lower_bound, "Upper bound": r.upper_bound} for r in model.reactions]
+    
 
     """Extraction of the constraints"""
     original_model=model.copy() #save informations to restore contraints and keep in mind the objective function of the original model 
@@ -71,22 +83,23 @@ def display(model):
                 grid.update()
 
             
+
+            
             # Reset constraints to original model values
             def reset_constraints(): 
                 nonlocal df #allows you to modify variables defined outside of the function 
-<<<<<<< HEAD
-                nonlocal model_copy 
-                df = extract_all_constraints(original_model) #reset the constraints with original_model
-                grid.options["rowData"] = df.to_dict("records") 
-                grid.update() # updates the constraints that the user sees on the interface
-                model_copy=original_model.copy()
-=======
                 nonlocal model 
                 df = extract_all_constraints(original_model) #reset the constraints with original_model
                 grid.options["rowData"] = df.to_dict("records") 
                 grid.update() # updates the constraints that the user sees on the interface
                 model=original_model.copy()
->>>>>>> 5199f89950600fefe31b8078032cc200f60dc76b
+            def reset_constraints(): 
+                nonlocal df #allows you to modify variables defined outside of the function 
+                nonlocal model_copy 
+                df = extract_all_constraints(original_model) #reset the constraints with original_model
+                grid.options["rowData"] = df.to_dict("records") 
+                grid.update() # updates the constraints that the user sees on the interface
+                model_copy=original_model.copy()
                 ui.notify("Constraints restored from original model", color="green")
 
             # Buttons to filter and reset constraints
@@ -108,6 +121,7 @@ def display(model):
             ).classes("w-full h-96")
             grid.on("cellValueChanged", on_grid_edit)
             ui.button("Export constraints to CSV", on_click=export_constraints).classes("mt-2 bg-green-600 text-white")
+
 
 
         # Right column : FBA results and objective selection
