@@ -13,12 +13,9 @@ def display(model):
             lb = 0 if r.lower_bound is None else r.lower_bound 
             ub = 0 if r.upper_bound is None else r.upper_bound
             rows.append({"Reaction": r.id, "Lower bound": lb, "Upper bound": ub})
-            lb = 0 if r.lower_bound is None else r.lower_bound 
-            ub = 0 if r.upper_bound is None else r.upper_bound
-            rows.append({"Reaction": r.id, "Lower bound": lb, "Upper bound": ub})
         return pd.DataFrame(rows)
 
-    model_copy=model.copy()
+    model_copy=model.copy() #copy to not modify the original model when applying constraints modifications from the grid
     df = extract_all_constraints(model_copy)
 
     # Functions to apply constraints modifications from the grid to the model
@@ -28,14 +25,7 @@ def display(model):
         r.lower_bound = float(row["Lower bound"])
         r.upper_bound = float(row["Upper bound"])
 
-    # Function to export constraints to CSV   
-    def get_constraints(model):
-        return [{"Reaction": r.id, "Lower bound": r.lower_bound, "Upper bound": r.upper_bound} for r in model.reactions]
-    
-    # Function to export constraints to CSV   
-    def get_constraints(model):
-        return [{"Reaction": r.id, "Lower bound": r.lower_bound, "Upper bound": r.upper_bound} for r in model.reactions]
-    
+    # Function to export constraints to CSV      
     def export_constraints():
         filename = "constraints.csv"
         fieldnames = ["Reaction", "Lower bound", "Upper bound"]
@@ -46,9 +36,6 @@ def display(model):
             writer = csv.DictWriter(file, fieldnames=fieldnames)
             writer.writeheader()
             writer.writerows(rows)
-
-            writer.writerows(rows)
-
         ui.download(filename)
 
     """Extraction of the constraints"""
@@ -81,9 +68,6 @@ def display(model):
             def reset_filter():
                 grid.options["rowData"] = df.to_dict("records")
                 grid.update()
-
-            
-
             
             # Reset constraints to original model values
             def reset_constraints(): 
@@ -122,8 +106,6 @@ def display(model):
             grid.on("cellValueChanged", on_grid_edit)
             ui.button("Export constraints to CSV", on_click=export_constraints).classes("mt-2 bg-green-600 text-white")
 
-
-
         # Right column : FBA results and objective selection
         with ui.column().classes("bg-gray-100 p-4 rounded-lg shadow-md w-96"):
 
@@ -133,7 +115,7 @@ def display(model):
                 options=reactions,
                 value="Biomass_rxn" if "Biomass_rxn" in reactions else reactions[0],
                 label="Choose objective reaction"
-            ).classes("w-80 mb-2")
+            ).classes("w-80 mb-2") #Choice of the objective reaction for FBA
 
             last_fluxes = None
             last_objective_value = None
@@ -165,7 +147,7 @@ def display(model):
                 rxn = model_copy.reactions.get_by_id(objective_select.value)
                 model_copy.objective = rxn.flux_expression
                 sense = "maximize" if mode=="max" else "minimize"
-                solution = model_copy.optimize(objective_sense=sense)
+                solution = model_copy.optimize(objective_sense=sense) #Optimize the model with the selected objective and sense
                 if solution.status != 'optimal':
                     ui.notify(f"FBA failed: {solution.status}", color="red")
                     return
