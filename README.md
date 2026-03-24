@@ -48,35 +48,6 @@ To start working using the app, please download the metabolic model you would li
 If you then click, on "Show Information regarding the model", you will then see "Connection Lost" appear. 
 
 Importing models on Windows can be tricky. To simplify:
-Replace the code in nicegui_main.py:
-
-```python
-store = {'model': None} # 
-
-async def uploads(e):
-    file = e.file        # premier fichier
-    data = await e.file.read()        # bytes du fichier
-    name = file.name
-    file_extension = os.path.splitext(name)[1]
-    # Sauvegarde temporaire
-    temp = tempfile.NamedTemporaryFile(delete=False, suffix=file_extension)
-    temp.write(data)
-    temp.close()
-
-    # Lecture du modèle
-    model = cobra.io.read_sbml_model(temp.name)
-    store['model'] = model
-
-    ui.notify(f"Modèle chargé : {model.name}")
-
-    display_container.clear()
-    V1_Bloc1_ui.display(model)
-```
-with :
-
-```python 
-model = load_model()
-store = {'model': model} 
-```
+Use the nicegui_main_Windows.py file
 
 Then, update the model_path in model_utils.py to directly point to your local model file.
