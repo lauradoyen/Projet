@@ -21,9 +21,27 @@ def display(model):
     # Functions to apply constraints modifications from the grid to the model
     def on_grid_edit(e):
         row = e.args["data"]
-        r = model_copy.reactions.get_by_id(row["Reaction"])
-        r.lower_bound = float(row["Lower bound"])
-        r.upper_bound = float(row["Upper bound"])
+        rxn_id = row["Reaction"]
+        r = model_copy.reactions.get_by_id(rxn_id)
+        old_lb = r.lower_bound
+        old_ub = r.upper_bound
+        try:
+            new_lb = float(row["Lower bound"])
+            new_ub = float(row["Upper bound"])
+        except:
+            ui.notify("Invalid number", color="red")
+            row["Lower bound"] = old_lb
+            row["Upper bound"] = old_ub
+            grid.update()
+            return
+        if new_lb > new_ub:
+            ui.notify("Lower bound cannot be greater than upper bound", color="red")
+            row["Lower bound"] = old_lb
+            row["Upper bound"] = old_ub
+            grid.update()
+            return
+        r.lower_bound = new_lb
+        r.upper_bound = new_ub
 
     # Function to export constraints to CSV      
     def export_constraints():
@@ -37,12 +55,6 @@ def display(model):
             writer.writeheader()
             writer.writerows(rows)
         ui.download(filename)
-
-    """Extraction of the constraints"""
-    original_model=model.copy() #save informations to restore contraints and keep in mind the objective function of the original model 
-    def get_constraints(model):
-        return [{"Reaction": r.id, "Lower bound": r.lower_bound, "Upper bound": r.upper_bound} for r in model.reactions]
-    
 
     """Extraction of the constraints"""
     original_model=model.copy() #save informations to restore contraints and keep in mind the objective function of the original model 
@@ -77,14 +89,7 @@ def display(model):
                 grid.options["rowData"] = df.to_dict("records") 
                 grid.update() # updates the constraints that the user sees on the interface
                 model=original_model.copy()
-            def reset_constraints(): 
-                nonlocal df #allows you to modify variables defined outside of the function 
-                nonlocal model_copy 
-                df = extract_all_constraints(original_model) #reset the constraints with original_model
-                grid.options["rowData"] = df.to_dict("records") 
-                grid.update() # updates the constraints that the user sees on the interface
-                model_copy=original_model.copy()
-                ui.notify("Constraints restored from original model", color="green")
+                ui.notify("COnstraints restored from original model",color="green")
 
             # Buttons to filter and reset constraints
             with ui.row().classes("gap-2 mb-2"):
