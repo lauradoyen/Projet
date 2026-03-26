@@ -10,14 +10,14 @@ def display(model):
     # Extraction of constraints from the model
     def get_constraints_min(model):
         return [
-            {"Reaction": r.id, "Lower bound": r.lower_bound, "Upper bound": ""}
+            {"Reaction": r.id, "Lower bound": r.lower_bound, "Upper bound": r.upper_bound}
             for r in model.reactions
             if r.lower_bound > -1000 and r.lower_bound != 0
         ]
 
     def get_constraints_max(model):
         return [
-            {"Reaction": r.id, "Lower bound": "", "Upper bound": r.upper_bound}
+            {"Reaction": r.id, "Lower bound": r.lower_bound, "Upper bound": r.upper_bound}
             for r in model.reactions
             if r.upper_bound < 1000 and r.upper_bound != 0
         ]
